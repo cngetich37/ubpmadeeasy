@@ -972,12 +972,15 @@ function CombinedSearch() {
     let currentY = topMargin + titleFontSize + spacing;
 
     const tableHeaders = ["Advert", ""];
-    const tableRows = [
+    let tableRows = [
       ["Advertisement Category", pdfData.advertisementCategory],
       ["Advert", advertSearchInput || "N/A"],
       ["Application Fee (New Applicant)", pdfData.applicationFee],
       ["Dimensions (Length × Width)", pdfData.dimensions],
-      ["Number of Sides", pdfData.numberOfSides], // NEW ROW
+      // Only show 'Number of Sides' for sideAdvertTypes
+      ...(sideAdvertTypes.includes(advertSearchInput)
+        ? [["Number of Sides", pdfData.numberOfSides]]
+        : []),
       ["First m²", pdfData.firstSquareMetres],
       ["First 3m²", pdfData.firstThreeMetres],
       ["First 10m²", pdfData.firstTenSquareMetres],
@@ -985,6 +988,8 @@ function CombinedSearch() {
       ["Licence Fee (Renewal)", pdfData.licenceFee],
       ["Licence Fee (New Applicant)", pdfData.licenceFeeN],
     ];
+    // Filter out rows where value is 'N/A' or empty string
+    tableRows = tableRows.filter(row => row[1] !== 'N/A' && row[1] !== '' && row[1] !== undefined);
 
     const columnWidths = [150, 120];
     const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
