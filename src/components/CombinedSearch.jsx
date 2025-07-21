@@ -777,7 +777,45 @@ function CombinedSearch() {
       },
     });
 
-    currentY += 30;
+
+    // Add No of ... and value row if both labelText and filterValue are present and filterValue is not empty
+    if (labelText && filterValue) {
+      const detailsTableWidth = 220;
+      const tableStartX = (pageWidth - detailsTableWidth) / 2;
+      pdf.autoTable({
+        startY: currentY,
+        startX: tableStartX,
+        margin: { top: 10, right: 10, bottom: 10, left: 5 },
+        head: [["Details", "Value"]],
+        body: [[
+          { content: labelText.replace(/:$/, ""), styles: { fontStyle: 'bold', halign: 'right', cellPadding: 4 } },
+          { content: filterValue, styles: { fontStyle: 'normal', halign: 'center', cellPadding: 4 } }
+        ]],
+        theme: "grid",
+        styles: {
+          textColor: "#064E3B",
+          font: "Times",
+          fontSize: 13,
+          valign: 'middle',
+        },
+        headStyles: {
+          fillColor: "#FFD700",
+          textColor: "#064E3B",
+          fontStyle: "bold",
+          fontSize: 13,
+          halign: "center",
+        },
+        columnStyles: {
+          0: { cellWidth: 110, halign: 'right' },
+          1: { cellWidth: 110, halign: 'right' },
+        },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y + 20;
+        },
+      });
+      currentY += 20;
+    }
+    currentY += 10;
 
     pdf.setFont("Times", "bold");
     pdf.setFontSize(16);

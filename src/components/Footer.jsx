@@ -9,7 +9,7 @@ const Footer = () => {
     >
       <div className="hidden md:flex justify-center">
         <p className="text-xl text-center italic">
-          Serving Nairobians with dignity 
+          {/* Removed text as requested */}
         </p>
       </div>
     </footer>
