@@ -1202,7 +1202,7 @@ function CombinedSearch() {
                       className="block text-sm font-medium text-emerald-900 mb-2"
                     >
                       {labelText
-                        .replace(/Hospitals/g, "Beds")
+                        .replace(/Hospitals/g, "beds")
                         .replace(/\bsq\b/g, "sq.m")}
                     </label>
                     <input
