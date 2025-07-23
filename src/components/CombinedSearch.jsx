@@ -1073,7 +1073,7 @@ function CombinedSearch() {
                 `}
                 onClick={() => setActiveTab("business")}
               >
-                Business Activity Information
+                UBP
               </button>
               <button
                 className={`w-1/2 md:w-1/2 py-2 px-6 font-semibold text-lg rounded-t-md transition-all duration-200 focus:outline-none
@@ -1085,7 +1085,7 @@ function CombinedSearch() {
                 `}
                 onClick={() => setActiveTab("advertisement")}
               >
-                Advert Calculator
+                Advert
               </button>
             </div>
 
