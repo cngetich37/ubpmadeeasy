@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import Select from "react-select";
 import axios from "axios";
 
@@ -585,6 +585,17 @@ const UBPTutorial = () => {
     }
     // eslint-disable-next-line
   }, [activeStep]);
+
+  const [openSections, setOpenSections] = useState({
+    applicationType: true,
+    businessDetails: true,
+    businessActivity: true,
+    advertDetails: true,
+    contacts: true,
+  });
+  const toggleSection = (section) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Step content renderers
   const renderStep = () => {
@@ -1175,49 +1186,96 @@ const UBPTutorial = () => {
           <div className="p-6 bg-gray-50 rounded-lg shadow-md">
             <h1 className="text-2xl font-bold text-emerald-900 mb-4">Review & Submit</h1>
             <p className="text-emerald-900 italic mb-4">{stepExplanations[activeStep]}</p>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-emerald-900 mb-2">Application Type</h2>
-              <div className="text-gray-800 mb-2">Type: <span className="font-medium">{formData.applicationType || '-'}</span></div>
-              <div className="text-gray-800 mb-2">Business Nature: <span className="font-medium">{formData.businessNature || '-'}</span></div>
-            </div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-emerald-900 mb-2">Business Details</h2>
-              {Object.entries(formData.businessDetails || {}).map(([key, value]) => (
-                <div key={key} className="text-gray-800 mb-1">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+            <div className="mb-6 rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+              <button
+                className="w-full flex justify-between items-center p-4 text-left text-lg font-bold focus:outline-none bg-[#FFD700] text-emerald-900 transition-all duration-300"
+                onClick={() => toggleSection('applicationType')}
+              >
+                Application Type
+                {openSections.applicationType ? <ChevronUp className="text-emerald-900" /> : <ChevronDown className="text-emerald-900" />}
+              </button>
+              {openSections.applicationType && (
+                <div className="bg-gray-50 p-4 text-emerald-900">
+                  <div className="mb-2">Type: <span className="font-medium">{formData.applicationType || '-'}</span></div>
+                  <div className="mb-2">Business Nature: <span className="font-medium">{formData.businessNature || '-'}</span></div>
                 </div>
-              ))}
+              )}
             </div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-emerald-900 mb-2">Business Activity</h2>
-              {Object.entries(formData.businessActivity || {}).map(([key, value]) => (
-                <div key={key} className="text-gray-800 mb-1">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+            <div className="mb-6 rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+              <button
+                className="w-full flex justify-between items-center p-4 text-left text-lg font-bold focus:outline-none bg-[#FFD700] text-emerald-900 transition-all duration-300"
+                onClick={() => toggleSection('businessDetails')}
+              >
+                Business Details
+                {openSections.businessDetails ? <ChevronUp className="text-emerald-900" /> : <ChevronDown className="text-emerald-900" />}
+              </button>
+              {openSections.businessDetails && (
+                <div className="bg-gray-50 p-4 text-emerald-900">
+                  {Object.entries(formData.businessDetails || {}).map(([key, value]) => (
+                    <div key={key} className="mb-1">
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-            {Object.keys(formData.advertDetails || {}).length > 0 ? (
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-emerald-900 mb-2">Advert Details</h2>
-                {Object.entries(formData.advertDetails || {}).map(([key, value]) => (
-                  <div key={key} className="text-gray-800 mb-1">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-emerald-900 mb-2">Advert Details</h2>
-                <div className="text-gray-800 mb-1 italic">No advert details provided.</div>
-              </div>
-            )}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-emerald-900 mb-2">Contacts</h2>
-              {Object.entries(formData.contacts || {}).map(([key, value]) => (
-                <div key={key} className="text-gray-800 mb-1">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+            <div className="mb-6 rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+              <button
+                className="w-full flex justify-between items-center p-4 text-left text-lg font-bold focus:outline-none bg-[#FFD700] text-emerald-900 transition-all duration-300"
+                onClick={() => toggleSection('businessActivity')}
+              >
+                Business Activity
+                {openSections.businessActivity ? <ChevronUp className="text-emerald-900" /> : <ChevronDown className="text-emerald-900" />}
+              </button>
+              {openSections.businessActivity && (
+                <div className="bg-gray-50 p-4 text-emerald-900">
+                  {Object.entries(formData.businessActivity || {}).map(([key, value]) => (
+                    <div key={key} className="mb-1">
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+            <div className="mb-6 rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+              <button
+                className="w-full flex justify-between items-center p-4 text-left text-lg font-bold focus:outline-none bg-[#FFD700] text-emerald-900 transition-all duration-300"
+                onClick={() => toggleSection('advertDetails')}
+              >
+                Advert Details
+                {openSections.advertDetails ? <ChevronUp className="text-emerald-900" /> : <ChevronDown className="text-emerald-900" />}
+              </button>
+              {openSections.advertDetails && (
+                <div className="bg-gray-50 p-4 text-emerald-900">
+                  {Object.keys(formData.advertDetails || {}).length > 0 ? (
+                    Object.entries(formData.advertDetails || {}).map(([key, value]) => (
+                      <div key={key} className="mb-1">
+                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="mb-1 italic">No advert details provided.</div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="mb-6 rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+              <button
+                className="w-full flex justify-between items-center p-4 text-left text-lg font-bold focus:outline-none bg-[#FFD700] text-emerald-900 transition-all duration-300"
+                onClick={() => toggleSection('contacts')}
+              >
+                Contacts
+                {openSections.contacts ? <ChevronUp className="text-emerald-900" /> : <ChevronDown className="text-emerald-900" />}
+              </button>
+              {openSections.contacts && (
+                <div className="bg-gray-50 p-4 text-emerald-900">
+                  {Object.entries(formData.contacts || {}).map(([key, value]) => (
+                    <div key={key} className="mb-1">
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: <span className="font-medium">{value || '-'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex justify-end mt-8">
               <button
