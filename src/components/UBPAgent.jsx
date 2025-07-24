@@ -546,19 +546,28 @@ const UBPAgent = () => {
           advertResult.firstTenSquareMetres = replaceWithKES(advertResult.firstTenSquareMetres);
           advertResult.licenceFee = replaceWithKES(advertResult.licenceFee);
           advertResult.licenceFeeN = replaceWithKES(advertResult.licenceFeeN);
-          responseText += `Advert: ${advertResult.foundAdvertType}\n`;
-          responseText += `Category: ${advertResult.advertisementCategory}\n`;
-          responseText += `Dimensions: ${advertResult.length}m x ${advertResult.width}m\n`;
-          if (advertResult.numberOfSides && advertResult.numberOfSides > 1) {
-            responseText += `Number of Sides: ${advertResult.numberOfSides}\n`;
-          }
-          responseText += `Application Fee: ${advertResult.applicationFee}\n`;
-          responseText += `First m²: ${advertResult.firstSquareMetres}\n`;
-          responseText += `First 3m²: ${advertResult.firstThreeMetres}\n`;
-          responseText += `First 10m²: ${advertResult.firstTenSquareMetres}\n`;
-          responseText += `Each Extra m²: ${advertResult.extraSquareMetres}\n`;
-          responseText += `Licence Fee (Renewal): ${advertResult.licenceFee}\n`;
-          responseText += `Licence Fee (New Applicant): ${advertResult.licenceFeeN}\n`;
+          // Compose advert response rows
+          let advertRows = [
+            ["Advert", advertResult.foundAdvertType],
+            ["Category", advertResult.advertisementCategory],
+            ["Dimensions", `${advertResult.length}m x ${advertResult.width}m`],
+            ...(sideAdvertTypes.includes(advertResult.foundAdvertType)
+              ? [["Number of Sides", advertResult.numberOfSides]]
+              : []),
+            ["Application Fee", advertResult.applicationFee],
+            ["First m²", advertResult.firstSquareMetres],
+            ["First 3m²", advertResult.firstThreeMetres],
+            ["First 10m²", advertResult.firstTenSquareMetres],
+            ["Each Extra m²", advertResult.extraSquareMetres],
+            ["Licence Fee (Renewal)", advertResult.licenceFee],
+            ["Licence Fee (New Applicant)", advertResult.licenceFeeN],
+          ];
+          // Filter out N/A, empty, or undefined
+          advertRows = advertRows.filter(row => row[1] !== 'N/A' && row[1] !== '' && row[1] !== undefined);
+          // Build responseText from filtered rows
+          advertRows.forEach(([label, value]) => {
+            responseText += `${label}: ${value}\n`;
+          });
           responseText += `\n`;
         }
         responseText += `You can download a PDF with these details below.`;
@@ -599,6 +608,7 @@ const UBPAgent = () => {
             ["Licence Fee (Renewal)", advertResult.licenceFee],
             ["Licence Fee (New Applicant)", advertResult.licenceFeeN],
           ];
+          // Filter out rows where value is 'N/A', empty string, or undefined
           tableRows = tableRows.filter(row => row[1] !== 'N/A' && row[1] !== '' && row[1] !== undefined);
           const columnWidths = [150, 120];
           const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
