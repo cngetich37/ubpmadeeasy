@@ -196,13 +196,13 @@ const UBPAgent = () => {
     if (!inputPrompt.trim()) return;
 
     try {
-      setSessions((prev) => ({
-        ...prev,
-        [currentSession]: [
-          ...(prev[currentSession] || []),
-          { role: "user", text: inputPrompt },
-        ],
-      }));
+    setSessions((prev) => ({
+      ...prev,
+      [currentSession]: [
+        ...(prev[currentSession] || []),
+        { role: "user", text: inputPrompt },
+      ],
+    }));
 
       // Detect if prompt contains both business and advert info
       const businessKeywords = [
@@ -231,115 +231,138 @@ const UBPAgent = () => {
       let businessSubCategoryMessage = "";
       let businessActivityMessage = "";
 
-      if (hasBusiness) {
-        bestMatch = businessData.find((item) =>
-          normalizeWord(inputPrompt.toLowerCase()).includes(
-            normalizeWord(item.commonBusinessActivity.toLowerCase())
-          )
-        );
+      {
+        // Improved normalization for robust matching
+        const normalize = str => str
+          .toLowerCase()
+          .replace(/[^a-z0-9 ]/gi, '') // remove punctuation
+          .replace(/\s+/g, ' ')        // collapse spaces
+          .trim();
+
+        const inputNorm = normalize(inputPrompt);
+        console.log('Normalized input:', inputNorm);
+        const matches = businessData
+          .map(item => ({
+            item,
+            activityNorm: normalize(item.commonBusinessActivity)
+          }))
+          .filter(({ activityNorm }) => {
+            console.log('Checking activity:', JSON.stringify(activityNorm), 'against input:', JSON.stringify(inputNorm));
+            // Try both includes and a word boundary regex
+            const found = inputNorm.includes(activityNorm) ||
+              new RegExp(`\\b${activityNorm}\\b`).test(inputNorm);
+            if (found) console.log('MATCHED:', activityNorm);
+            return found;
+          });
+        console.log('Matches found:', matches.map(m => m.activityNorm));
+
+        // Pick the longest match (most specific)
+        bestMatch = matches.length
+          ? matches.reduce((a, b) => (b.activityNorm.length > a.activityNorm.length ? b : a)).item
+          : null;
         if (bestMatch) {
-          try {
-            const response = await fetch(
-              `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${bestMatch.businessActivity}`
+    try {
+      const response = await fetch(
+              `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${encodeURIComponent(bestMatch.businessActivity)}`
             );
             businessDetails = await response.json();
 
             // Fetch the message/description for each field
             const [industryMsg, businessCategoryMsg, businessSubCategoryMsg, businessActivityMsg] = await Promise.all([
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/industry/${bestMatch.industry}`).then(res => res.json()).then(data => data.industry),
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesscategories/${bestMatch.businessCategory}`).then(res => res.json()).then(data => data.businessCategory),
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesssubcategories/${bestMatch.businessSubCategory}`).then(res => res.json()).then(data => data.businessSubCategory),
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${bestMatch.businessActivity}`).then(res => res.json()).then(data => data.businessActivity),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/industry/${encodeURIComponent(bestMatch.industry)}`).then(res => res.json()).then(data => data.industry),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesscategories/${encodeURIComponent(bestMatch.businessCategory)}`).then(res => res.json()).then(data => data.businessCategory),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesssubcategories/${encodeURIComponent(bestMatch.businessSubCategory)}`).then(res => res.json()).then(data => data.businessSubCategory),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${encodeURIComponent(bestMatch.businessActivity)}`).then(res => res.json()).then(data => data.businessActivity),
             ]);
             industryMessage = industryMsg;
             businessCategoryMessage = businessCategoryMsg;
             businessSubCategoryMessage = businessSubCategoryMsg;
             businessActivityMessage = businessActivityMsg;
 
-            // Step 2: Extract numbers (outlets/employees)
+      // Step 2: Extract numbers (outlets/employees)
             requestedNumbers = extractNumbers(inputPrompt);
-            // Extract size-based classification (e.g., "1000 sq.m" or "500m²")
+      // Extract size-based classification (e.g., "1000 sq.m" or "500m²")
             const sizeMatch = inputPrompt.match(/(\d+)\s*(sq\.?m|square meters?|m²)/i);
             requestedSize = sizeMatch ? parseInt(sizeMatch[1]) : null;
             // Find category
-            if (requestedNumbers.length > 0) {
-              selectedCategory = businessDetails.financeActs.find((item) => {
-                const numbersInDescription =
-                  item.businessDescription.match(/\d+/g)?.map(Number) || [];
-                return requestedNumbers.some((num) => {
-                  if (numbersInDescription.length === 2) {
-                    return (
-                      num >= numbersInDescription[0] && num <= numbersInDescription[1]
-                    ); // Matches "X-Y range"
-                  } else if (numbersInDescription.length === 1) {
-                    return num > numbersInDescription[0]; // Matches "over X"
-                  }
-                  return false;
-                });
-              });
-              // Handle specific cases like "up to X", "less than X", "over X"
-              if (!selectedCategory) {
-                selectedCategory = businessDetails.financeActs.find((item) => {
-                  const desc = item.businessDescription.toLowerCase();
-                  if (/up to|upto/.test(desc)) {
-                    const match = item.businessDescription.match(/\b(up to|upto)\s+(\d+)/i);
-                    if (match)
-                      return requestedNumbers.some(
-                        (num) => num <= parseInt(match[2], 10)
-                      );
-                  }
-                  if (/less than/.test(desc)) {
-                    const match = item.businessDescription.match(/\bless\s+than\s+(\d+)/i);
-                    if (match)
-                      return requestedNumbers.some(
-                        (num) => num < parseInt(match[1], 10)
-                      );
-                  }
-                  if (/over/.test(desc)) {
-                    const match = item.businessDescription.match(/\bover\s+(\d+)/i);
-                    if (match)
-                      return requestedNumbers.some(
-                        (num) => num > parseInt(match[1], 10)
-                      );
-                  }
-                  return false;
-                });
-              }
+      if (requestedNumbers.length > 0) {
+        selectedCategory = businessDetails.financeActs.find((item) => {
+          const numbersInDescription =
+            item.businessDescription.match(/\d+/g)?.map(Number) || [];
+          return requestedNumbers.some((num) => {
+            if (numbersInDescription.length === 2) {
+              return (
+                num >= numbersInDescription[0] && num <= numbersInDescription[1]
+              ); // Matches "X-Y range"
+            } else if (numbersInDescription.length === 1) {
+              return num > numbersInDescription[0]; // Matches "over X"
             }
-            if (requestedSize) {
-              if (!selectedCategory) {
-                selectedCategory = businessDetails.financeActs.find((item) => {
-                  const desc = item.businessDescription.toLowerCase();
-                  if (/up to|upto/.test(desc)) {
+            return false;
+          });
+        });
+        // Handle specific cases like "up to X", "less than X", "over X"
+        if (!selectedCategory) {
+          selectedCategory = businessDetails.financeActs.find((item) => {
+            const desc = item.businessDescription.toLowerCase();
+            if (/up to|upto/.test(desc)) {
                     const match = item.businessDescription.match(/\b(up to|upto)\s+(\d+)/i);
-                    if (match) return requestedSize <= parseInt(match[2], 10);
-                  }
-                  if (/less than/.test(desc)) {
+              if (match)
+                return requestedNumbers.some(
+                  (num) => num <= parseInt(match[2], 10)
+                );
+            }
+            if (/less than/.test(desc)) {
                     const match = item.businessDescription.match(/\bless\s+than\s+(\d+)/i);
-                    if (match) return requestedSize < parseInt(match[1], 10);
-                  }
-                  if (/\b(\d+)\s*-\s*(\d+)/.test(item.businessDescription)) {
+              if (match)
+                return requestedNumbers.some(
+                  (num) => num < parseInt(match[1], 10)
+                );
+            }
+            if (/over/.test(desc)) {
+              const match = item.businessDescription.match(/\bover\s+(\d+)/i);
+              if (match)
+                return requestedNumbers.some(
+                  (num) => num > parseInt(match[1], 10)
+                );
+            }
+            return false;
+          });
+        }
+      }
+      if (requestedSize) {
+        if (!selectedCategory) {
+          selectedCategory = businessDetails.financeActs.find((item) => {
+            const desc = item.businessDescription.toLowerCase();
+            if (/up to|upto/.test(desc)) {
+                    const match = item.businessDescription.match(/\b(up to|upto)\s+(\d+)/i);
+              if (match) return requestedSize <= parseInt(match[2], 10);
+            }
+            if (/less than/.test(desc)) {
+                    const match = item.businessDescription.match(/\bless\s+than\s+(\d+)/i);
+              if (match) return requestedSize < parseInt(match[1], 10);
+            }
+            if (/\b(\d+)\s*-\s*(\d+)/.test(item.businessDescription)) {
                     const match = item.businessDescription.match(/\b(\d+)\s*-\s*(\d+)/);
-                    if (match) {
-                      const minSize = parseInt(match[1]);
-                      const maxSize = parseInt(match[2]);
-                      return requestedSize >= minSize && requestedSize <= maxSize;
-                    }
-                  }
-                  if (/over/.test(desc)) {
-                    const match = item.businessDescription.match(/\bover\s+(\d+)/);
-                    if (match) return requestedSize > parseInt(match[1], 10);
-                  }
-                  return false;
-                });
+              if (match) {
+                const minSize = parseInt(match[1]);
+                const maxSize = parseInt(match[2]);
+                return requestedSize >= minSize && requestedSize <= maxSize;
               }
             }
-            // Fallback to generic category if no exact match
-            if (!selectedCategory && businessDetails.financeActs.length > 0) {
-              selectedCategory =
-                businessDetails.financeActs.find(
-                  (item) => !/\d+/.test(item.businessDescription)
-                ) || businessDetails.financeActs[0];
+            if (/over/.test(desc)) {
+              const match = item.businessDescription.match(/\bover\s+(\d+)/);
+              if (match) return requestedSize > parseInt(match[1], 10);
+            }
+            return false;
+          });
+        }
+      }
+      // Fallback to generic category if no exact match
+      if (!selectedCategory && businessDetails.financeActs.length > 0) {
+        selectedCategory =
+          businessDetails.financeActs.find(
+            (item) => !/\d+/.test(item.businessDescription)
+          ) || businessDetails.financeActs[0];
             }
             // Label for PDF
             if (selectedCategory && selectedCategory.businessDescription) {
@@ -501,10 +524,10 @@ const UBPAgent = () => {
         if (businessResult) {
           const { bestMatch, selectedCategory } = businessResult;
           responseText += `Business: ${bestMatch.commonBusinessActivity}\n`;
-          responseText += `Industry: ${bestMatch.industry}\n`;
-          responseText += `Business Category: ${bestMatch.businessCategory}\n`;
-          responseText += `Business Subcategory: ${bestMatch.businessSubCategory}\n`;
-          responseText += `Business Activity: ${bestMatch.businessActivity}\n`;
+        responseText += `Industry: ${bestMatch.industry}\n`;
+        responseText += `Business Category: ${bestMatch.businessCategory}\n`;
+        responseText += `Business Subcategory: ${bestMatch.businessSubCategory}\n`;
+        responseText += `Business Activity: ${bestMatch.businessActivity}\n`;
           if (selectedCategory) {
             responseText += `For a ${selectedCategory.businessDescription}, the charges are:\n`;
             responseText += `Trade License: ${selectedCategory.tradeLicence}, Fire Clearance: ${selectedCategory.fireClearance}, Food Hygiene: ${selectedCategory.foodHygiene}, Health Certificate: ${selectedCategory.healthCertificate}, Pest Control: ${selectedCategory.pestControl}\n`;
@@ -606,7 +629,7 @@ const UBPAgent = () => {
           const qrCodeX = pdf.internal.pageSize.getWidth() - 100;
           const qrCodeY = pdf.internal.pageSize.getHeight() - 100;
           pdf.addImage(qrCodeDataUrl, "PNG", qrCodeX, qrCodeY, 80, 80);
-        } else {
+      } else {
           // Business or both: use landscape, append advert summary after business section
           pdf = new jsPDF("landscape", "pt", "a5");
           pdf.setFillColor("#FFFFFF");
@@ -717,14 +740,74 @@ const UBPAgent = () => {
               "Pest Control",
               "Total (KES)",
             ];
-            const tableRowsFinance = businessDetails.financeActs.map((row) => {
+            // Filtering logic like CombinedSearch.jsx
+            const matchNumberRange = (description, input) => {
+              const cleanedDescription = description.toLowerCase().trim();
+              const rangeMatch = cleanedDescription.match(
+                /\b(?:from\s+)?(\d+)\s*[-–—]{1,2}\s*(\d+)\s*(?:sq\.?\s*m|m²)?\b/
+              );
+              if (rangeMatch) {
+                const lowerBound = parseInt(rangeMatch[1], 10);
+                const upperBound = parseInt(rangeMatch[2], 10);
+                return input >= lowerBound && input <= upperBound;
+              }
+              const upToMatch = cleanedDescription.match(/\b(up to|upto)\s+(\d+)/);
+              if (upToMatch) {
+                const upperBound = parseInt(upToMatch[2], 10);
+                return input >= 1 && input <= upperBound;
+              }
+              const aboveMatch = cleanedDescription.match(/\babove\s+(\d+)/);
+              if (aboveMatch) {
+                const lowerBound = parseInt(aboveMatch[1], 10);
+                return input > lowerBound;
+              }
+              const lessThanMatch = cleanedDescription.match(/\bless\s+than\s+(\d+)/i);
+              if (lessThanMatch) {
+                const upperBound = parseInt(lessThanMatch[1], 10);
+                return input >= 1 && input < upperBound;
+              }
+              const toMatch = cleanedDescription.match(/\bto\s+(\d+)/);
+              if (toMatch) {
+                const upperBound = parseInt(toMatch[1], 10);
+                return input >= 2 && input <= upperBound;
+              }
+              const vehicleMatch = cleanedDescription.match(
+                /(?:with|without)\s+(\d+)\s+vehicle/
+              );
+              if (vehicleMatch) {
+                const vehicleCount = parseInt(vehicleMatch[1], 10);
+                if (input === vehicleCount) {
+                  return true;
+                }
+              }
+              const overMatch = cleanedDescription.match(/\bover\s+(\d+)/);
+              if (overMatch) {
+                const lowerBound = parseInt(overMatch[1], 10);
+                return input > lowerBound;
+              }
+              return false;
+            };
+            let filteredRows = businessDetails.financeActs;
+            if (filterValue) {
+              const inputNumber = parseInt(filterValue);
+              if (!isNaN(inputNumber)) {
+                filteredRows = filteredRows.filter(row => matchNumberRange(row.businessDescription, inputNumber));
+              }
+            }
+            // Remove duplicates by businessDescription
+            filteredRows = filteredRows.reduce((uniqueRows, row) => {
+              if (!uniqueRows.some(uniqueRow => uniqueRow.businessDescription === row.businessDescription)) {
+                uniqueRows.push(row);
+              }
+              return uniqueRows;
+            }, []);
+            const tableRowsFinance = filteredRows.map((row) => {
               const total =
                 (parseFloat(row.tradeLicence) || 0) +
                 (parseFloat(row.fireClearance) || 0) +
                 (parseFloat(row.foodHygiene) || 0) +
                 (parseFloat(row.healthCertificate) || 0) +
                 (parseFloat(row.pestControl) || 0);
-              // Replace KES with Kenya shillings in all currency fields
               const formatCurrency = (val) => String(val).replace(/KES|KSH/gi, 'KES');
               return [
                 row.subCategory,
@@ -804,16 +887,16 @@ const UBPAgent = () => {
         const url = URL.createObjectURL(pdfBlob);
         setPdfUrl(url);
 
-        simulateTyping(responseText, () => {
-          setSessions((prev) => ({
-            ...prev,
-            [currentSession]: [
-              ...(prev[currentSession] || []),
+      simulateTyping(responseText, () => {
+        setSessions((prev) => ({
+          ...prev,
+          [currentSession]: [
+            ...(prev[currentSession] || []),
               { role: "assistant", text: responseText, pdf: url },
-            ],
-          }));
-          handleReadText(responseText);
-        });
+          ],
+        }));
+        handleReadText(responseText);
+      });
         return;
       }
 
