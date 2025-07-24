@@ -65,13 +65,13 @@ The component renders a responsive layout with input fields for advertisement di
 1. Clone the repository to your local machine using the following command:
 
     ```bash
-    git clone https://github.com/cngetich37/UBPMadeEasy-frontend.git
+    git clone https://github.com/ubpmadeeasy/ubpmadeeasy.git
     ```
 
 2. Navigate to the project directory:
 
     ```bash
-    cd UBPMadeEasy-frontend
+    cd ubpmadeeasy
     ```
 
 3. Install dependencies:
