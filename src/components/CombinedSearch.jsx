@@ -977,7 +977,7 @@ function CombinedSearch() {
       ["Advert", advertSearchInput || "N/A"],
       ["Application Fee (New Applicant)", pdfData.applicationFee],
       ["Dimensions (Length × Width)", pdfData.dimensions],
-      // Only show 'Number of Sides' for sideAdvertTypes
+      // Only show 'Number of Sides' for sideAdvertTypes (always, even if 1)
       ...(sideAdvertTypes.includes(advertSearchInput)
         ? [["Number of Sides", pdfData.numberOfSides]]
         : []),
@@ -985,8 +985,8 @@ function CombinedSearch() {
       ["First 3m²", pdfData.firstThreeMetres],
       ["First 10m²", pdfData.firstTenSquareMetres],
       ["Each Extra m²", pdfData.extraSquareMetres],
-      ["Licence Fee (Renewal)", pdfData.licenceFee],
-      ["Licence Fee (New Applicant)", pdfData.licenceFeeN],
+      ["Licence Fee (Renewal, Total for Sides)", pdfData.licenceFee],
+      ["Licence Fee (New Applicant, Total for Sides)", pdfData.licenceFeeN],
     ];
     // Filter out rows where value is 'N/A' or empty string
     tableRows = tableRows.filter(row => row[1] !== 'N/A' && row[1] !== '' && row[1] !== undefined);

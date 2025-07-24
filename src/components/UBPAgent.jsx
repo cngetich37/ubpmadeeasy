@@ -145,12 +145,17 @@ const UBPAgent = () => {
       .then(data => setAdvertTypes(data.map(item => item.advertType)));
   }, []);
 
+  // Move sideAdvertTypes here for global access in the component
+  const sideAdvertTypes = [
+    "Above Canopy", "Under Canopy", "Directional Signs", "Billboard", "Call In Adverts"
+  ];
+
   const chatContainerRef = useRef(null);
 
   // Example prompts (unchanged)
   const examplePrompts = [
     "Business charges for MPESA with 5 outlets?",
-    "What is the business activity code for betting shop?",
+    "Above canopy with 2 sides?",
     "Kinyozi with 2 employees?",
     "Food storage with 1000 sq.m?",
   ];
@@ -247,14 +252,14 @@ const UBPAgent = () => {
             activityNorm: normalize(item.commonBusinessActivity)
           }))
           .filter(({ activityNorm }) => {
-            console.log('Checking activity:', JSON.stringify(activityNorm), 'against input:', JSON.stringify(inputNorm));
+            
             // Try both includes and a word boundary regex
             const found = inputNorm.includes(activityNorm) ||
               new RegExp(`\\b${activityNorm}\\b`).test(inputNorm);
             if (found) console.log('MATCHED:', activityNorm);
             return found;
           });
-        console.log('Matches found:', matches.map(m => m.activityNorm));
+       
 
         // Pick the longest match (most specific)
         bestMatch = matches.length
@@ -400,9 +405,6 @@ const UBPAgent = () => {
             width = parseFloat(dimMatch[4]);
           }
           let numberOfSides = 1;
-          const sideAdvertTypes = [
-            "Above Canopy", "Under Canopy", "Directional Signs", "Billboard", "Call In Adverts"
-          ];
           // Try to extract number of sides from prompt (e.g. "2 sides")
           const sidesMatch = inputPrompt.match(/(\d+)\s*sides?/i);
           if (sidesMatch) {
@@ -559,7 +561,7 @@ const UBPAgent = () => {
           responseText += `Licence Fee (New Applicant): ${advertResult.licenceFeeN}\n`;
           responseText += `\n`;
         }
-        responseText += `You can download a combined PDF with these details below.`;
+        responseText += `You can download a PDF with these details below.`;
         // Replace KSH/KES with Kenya shillings in the responseText
         responseText = responseText.replace(/KSH|KES/gi, 'KES');
 
@@ -586,7 +588,10 @@ const UBPAgent = () => {
             ["Advert", advertResult.foundAdvertType],
             ["Application Fee (New Applicant)", advertResult.applicationFee],
             ["Dimensions (Length × Width)", `${advertResult.length} m × ${advertResult.width} m`],
-            ...(advertResult.numberOfSides && advertResult.numberOfSides > 1 ? [["Number of Sides", advertResult.numberOfSides]] : []),
+            // Always show number of sides for side-based types
+            ...(sideAdvertTypes.includes(advertResult.foundAdvertType)
+              ? [["Number of Sides", advertResult.numberOfSides]]
+              : []),
             ["First m²", advertResult.firstSquareMetres],
             ["First 3m²", advertResult.firstThreeMetres],
             ["First 10m²", advertResult.firstTenSquareMetres],
