@@ -3,6 +3,9 @@ import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+const brandYellow = "#FFD700";
+const brandGreen = "#065A38";
+
 const FAQs = () => {
   const faqs = [
     {
@@ -43,13 +46,20 @@ const FAQs = () => {
   ];
 
   const [openIndex, setOpenIndex] = useState(null);
+  const [search, setSearch] = useState("");
 
   const toggleFAQ = (index) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  const filteredFaqs = faqs.filter(
+    (faq) =>
+      faq.question.toLowerCase().includes(search.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white p-6">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white px-2 py-8">
       {/* SEO Metadata */}
       <Helmet>
         <title>FAQs - Unified Business Permits & MPESA Outlets</title>
@@ -65,46 +75,83 @@ const FAQs = () => {
       </Helmet>
 
       {/* Header */}
-      <div className="text-center max-w-3xl mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <div className="text-center max-w-3xl mb-10">
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] to-[#FFEC8B] drop-shadow-lg">
           Frequently Asked Questions
         </h1>
-        <p className="text-lg md:text-xl font-light">
-          Find answers to common questions regarding unified business permits,
-          MPESA outlets, and more.
+        <p className="text-lg md:text-xl font-light text-white/90">
+          Find answers to common questions regarding unified business permits, MPESA outlets, and more.
         </p>
       </div>
 
+      {/* Search Bar */}
+      <div className="w-full max-w-2xl mb-8 flex items-center justify-center">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search questions..."
+          className="w-full px-5 py-3 rounded-full bg-white/80 text-emerald-900 placeholder-emerald-700 shadow-md focus:outline-none focus:ring-2 focus:ring-[#FFD700] transition-all text-lg"
+          aria-label="Search FAQs"
+        />
+      </div>
+
       {/* FAQ Accordion */}
-      <div className="w-full max-w-4xl space-y-4">
-        {faqs.map((faq, index) => (
-          <motion.div
-            key={index}
-            className="bg-white text-emerald-900 rounded-lg shadow-lg overflow-hidden border border-gray-300 hover:shadow-xl transition-all duration-300"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <button
-              className="w-full flex justify-between items-center p-6 text-left text-xl font-bold focus:outline-none bg-[#FFD700] text-emerald-900 transition-all duration-300"
-              onClick={() => toggleFAQ(index)}
-            >
-              {faq.question}
-              {openIndex === index ? (
-                <ChevronUp className="text-emerald-900" />
-              ) : (
-                <ChevronDown className="text-emerald-900" />
-              )}
-            </button>
+      <div className="w-full max-w-3xl space-y-6">
+        {filteredFaqs.length === 0 && (
+          <div className="text-center text-lg text-[#FFD700] font-semibold py-8 animate-pulse">
+            No FAQs found for your search.
+          </div>
+        )}
+        {filteredFaqs.map((faq, index) => {
+          // Find the original index for toggle logic
+          const origIndex = faqs.findIndex((f) => f.question === faq.question);
+          return (
             <motion.div
-              className={`overflow-hidden transition-all duration-500 ease-in-out bg-gray-100 text-emerald-900 ${
-                openIndex === index ? "max-h-screen p-6" : "max-h-0 p-0"
-              }`}
+              key={faq.question}
+              className="backdrop-blur-lg bg-white/10 border border-white/30 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.08 }}
             >
-              <p className="text-lg leading-relaxed">{faq.answer}</p>
+              <button
+                className={`w-full flex justify-between items-center px-6 py-5 md:py-6 text-left text-xl md:text-2xl font-bold focus:outline-none transition-all duration-300 bg-gradient-to-r from-[#FFD700]/90 to-[#FFEC8B]/80 text-emerald-900 group relative`}
+                onClick={() => toggleFAQ(origIndex)}
+                aria-expanded={openIndex === origIndex}
+                aria-controls={`faq-panel-${origIndex}`}
+              >
+                <span className="flex-1 text-emerald-900 group-hover:underline group-hover:decoration-2 group-hover:decoration-[#FFD700]">
+                  {faq.question}
+                </span>
+                <span className="ml-4 flex-shrink-0">
+                  {openIndex === origIndex ? (
+                    <ChevronUp className="text-emerald-900 transition-transform duration-300 rotate-180" />
+                  ) : (
+                    <ChevronDown className="text-emerald-900 transition-transform duration-300" />
+                  )}
+                </span>
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#FFD700] opacity-60 group-hover:scale-125 transition-transform duration-300" />
+              </button>
+              <motion.div
+                id={`faq-panel-${origIndex}`}
+                className={`overflow-hidden bg-white/80 text-emerald-900 transition-all duration-500 ease-in-out ${openIndex === origIndex ? "max-h-96 p-6" : "max-h-0 p-0"}`}
+                initial={false}
+                animate={{ height: openIndex === origIndex ? "auto" : 0, opacity: openIndex === origIndex ? 1 : 0.5 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                aria-hidden={openIndex !== origIndex}
+              >
+                <p className="text-lg leading-relaxed font-medium">
+                  {faq.answer}
+                </p>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ))}
+          );
+        })}
+      </div>
+
+      {/* Decorative Glow */}
+      <div className="pointer-events-none fixed inset-0 z-[-1] flex items-center justify-center">
+        <div className="w-[600px] h-[600px] rounded-full bg-[#FFD700]/10 blur-3xl opacity-60 animate-pulse" />
       </div>
     </div>
   );
