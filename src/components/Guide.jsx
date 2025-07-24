@@ -82,21 +82,21 @@ const Guide = () => {
         <meta name="author" content="Collins Ngetich" />
       </Helmet>
 
-      <main className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 flex flex-col items-center justify-center px-2 py-8">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 dark:from-[var(--color-bg)] dark:via-[var(--color-surface)] dark:to-[var(--color-bg)] flex flex-col items-center justify-center px-2 py-8">
         {/* Hero Section */}
         <section className="w-full max-w-3xl flex flex-col items-center text-center mb-8 animate-fade-in">
           <div className="flex items-center justify-center mb-4">
-            <span className="bg-yellow-400 rounded-full p-4 shadow-lg shadow-yellow-500/30">
-              <FaRegLightbulb className="text-4xl text-emerald-900" />
+            <span className="bg-yellow-400 dark:bg-[var(--color-primary)] rounded-full p-4 shadow-lg shadow-yellow-500/30">
+              <FaRegLightbulb className="text-4xl text-emerald-900 dark:text-[var(--color-bg)]" />
             </span>
           </div>
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 mb-2 drop-shadow-lg">
+          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 dark:from-[var(--color-primary)] dark:to-yellow-300 mb-2 drop-shadow-lg">
             User Guide
           </h1>
-          <p className="text-lg text-emerald-100 max-w-xl mb-2">
+          <p className="text-lg text-emerald-100 dark:text-[var(--color-text)] max-w-xl mb-2">
             Step-by-step instructions to help you navigate the NairobiPay Portal and apply for your Unified Business Permit with ease.
           </p>
-          <div className="h-1 bg-gradient-to-r from-yellow-500 via-yellow-300 to-yellow-500 w-2/3 mx-auto mt-2 rounded-full"></div>
+          <div className="h-1 bg-gradient-to-r from-yellow-500 via-yellow-300 to-yellow-500 dark:from-[var(--color-primary)] dark:via-yellow-300 dark:to-[var(--color-primary)] w-2/3 mx-auto mt-2 rounded-full"></div>
         </section>
 
         {/* Steps Section */}

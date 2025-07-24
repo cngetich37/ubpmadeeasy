@@ -255,3 +255,38 @@ caption {
   font-weight: 600;
 }
 
+:root {
+  --color-bg: #fff;
+  --color-surface: #f7f7f7;
+  --color-primary: #FFD700;
+  --color-secondary: #065A38;
+  --color-text: #232b2f;
+  --color-muted: #f2f2f2;
+}
+.dark {
+  --color-bg: #10151a;
+  --color-surface: #182024;
+  --color-primary: #FFD700;
+  --color-secondary: #065A38;
+  --color-text: #F3F4F6;
+  --color-muted: #232b2f;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Example for table backgrounds */
+table {
+  background-color: var(--color-surface);
+}
+th, td {
+  border: 1px solid var(--color-primary);
+}
+tr:nth-child(even) {
+  background-color: var(--color-muted);
+}
+
+/* Add dark: classes in components for Tailwind backgrounds/text as needed */
+

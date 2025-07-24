@@ -1070,7 +1070,7 @@ const UBPAgent = () => {
           content="Business permit, AI Business Assistant, Business charges Estimation, Financial Act Planning"
         />
       </Helmet>
-      <div className="flex flex-col md:flex-row h-screen bg-[#F5F5F5] p-4 gap-4">
+      <div className="flex flex-col md:flex-row h-screen bg-[#F5F5F5] dark:bg-[var(--color-bg)] p-4 gap-4">
         {/* Mobile Sidebar Toggle Button */}
         <button
           className="md:hidden p-2 bg-emerald-900 text-white rounded-lg"
@@ -1083,9 +1083,9 @@ const UBPAgent = () => {
         <div
           className={`${
             isSidebarOpen ? "block" : "hidden"
-          } md:block w-full md:w-1/4 bg-white p-4 rounded-lg shadow-lg`}
+          } md:block w-full md:w-1/4 bg-white dark:bg-[var(--color-surface)] p-4 rounded-lg shadow-lg`}
         >
-          <h2 className="text-xl font-bold text-emerald-900 mb-4">Chats</h2>
+          <h2 className="text-xl font-bold text-emerald-900 dark:text-white mb-4">Chats</h2>
           <button
             className="w-full bg-emerald-900 text-white p-2 rounded-lg flex items-center justify-center gap-2 hover:bg-[#05482D] transition-colors"
             onClick={() => {
@@ -1125,7 +1125,7 @@ const UBPAgent = () => {
         </div>
 
         {/* Main Chat Interface */}
-        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[var(--color-surface)] rounded-lg shadow-lg overflow-hidden">
           <header className="bg-emerald-900 p-4">
             <h1 className="text-2xl font-bold text-center text-white">
               <span className="text-[#FFD700]">UBP</span>Agent
@@ -1133,7 +1133,7 @@ const UBPAgent = () => {
           </header>
           <div
             ref={chatContainerRef}
-            className="flex-1 p-4 overflow-y-auto space-y-4"
+            className="flex-1 p-4 overflow-y-auto space-y-4 bg-white dark:bg-[var(--color-surface)]"
           >
             {sessions[currentSession]?.map((message, index) => (
               <motion.div
@@ -1149,7 +1149,7 @@ const UBPAgent = () => {
                   className={`max-w-[80%] p-3 rounded-lg ${
                     message.role === "user"
                       ? "bg-[#FFD700] text-emerald-900"
-                      : "bg-emerald-900 text-white"
+                      : "bg-emerald-900 text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-bg)]"
                   }`}
                 >
                   {message.text}
@@ -1174,17 +1174,17 @@ const UBPAgent = () => {
                 transition={{ duration: 0.5 }}
                 className="flex justify-start"
               >
-                <div className="max-w-[80%] p-3 bg-emerald-900 text-white rounded-lg">
+                <div className="max-w-[80%] p-3 bg-emerald-900 text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-bg)] rounded-lg">
                   {typing}
                 </div>
               </motion.div>
             )}
           </div>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
-                className="flex-1 p-2 border border-emerald-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD700]"
+                className="flex-1 p-2 border border-emerald-900 dark:border-[var(--color-primary)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD700] dark:focus:ring-[var(--color-primary)] bg-white dark:bg-[var(--color-surface)] text-emerald-900 dark:text-[var(--color-text)]"
                 placeholder="Enter your prompt..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -1224,19 +1224,19 @@ const UBPAgent = () => {
                 </button>
               </div>
             </div>
-            <p className="text-sm text-emerald-900 text-center mt-2 italic">
+            <p className="text-sm text-emerald-900 dark:text-white text-center mt-2 italic">
               UBPAgent can make mistakes. Please consult the Finance Act.
             </p>
           </div>
-          <div className="p-4 bg-gray-50">
-            <h2 className="text-lg font-bold text-emerald-900 mb-2">
+          <div className="p-4 bg-gray-50 dark:bg-[var(--color-surface)">
+            <h2 className="text-lg font-bold text-emerald-900 dark:text-white mb-2">
               Example Prompts:
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               {examplePrompts.map((ex, index) => (
                 <button
                   key={index}
-                  className="p-2 bg-emerald-900 text-white rounded-lg hover:bg-[#05482D] transition-colors text-sm text-left"
+                  className="p-2 bg-emerald-900 text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-bg)] rounded-lg hover:bg-[#05482D] dark:hover:bg-yellow-300 transition-colors text-sm text-left"
                   onClick={() => handleSendPrompt(ex)}
                 >
                   {ex}

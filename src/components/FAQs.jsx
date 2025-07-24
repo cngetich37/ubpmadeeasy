@@ -109,32 +109,32 @@ const FAQs = () => {
           return (
             <motion.div
               key={faq.question}
-              className="backdrop-blur-lg bg-white/10 border border-white/30 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+              className="backdrop-blur-lg bg-white/10 dark:bg-[var(--color-surface)]/20 border border-white/30 dark:border-[var(--color-primary)]/30 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.08 }}
             >
               <button
-                className={`w-full flex justify-between items-center px-6 py-5 md:py-6 text-left text-xl md:text-2xl font-bold focus:outline-none transition-all duration-300 bg-gradient-to-r from-[#FFD700]/90 to-[#FFEC8B]/80 text-emerald-900 group relative`}
+                className={`w-full flex justify-between items-center px-6 py-5 md:py-6 text-left text-xl md:text-2xl font-bold focus:outline-none transition-all duration-300 bg-gradient-to-r from-[#FFD700]/90 to-[#FFEC8B]/80 dark:from-[var(--color-primary)]/90 dark:to-yellow-300/80 text-emerald-900 dark:text-[var(--color-text)] group relative`}
                 onClick={() => toggleFAQ(origIndex)}
                 aria-expanded={openIndex === origIndex}
                 aria-controls={`faq-panel-${origIndex}`}
               >
-                <span className="flex-1 text-emerald-900 group-hover:underline group-hover:decoration-2 group-hover:decoration-[#FFD700]">
+                <span className="flex-1 text-emerald-900 dark:text-[var(--color-text)] group-hover:underline group-hover:decoration-2 group-hover:decoration-[#FFD700] dark:group-hover:decoration-[var(--color-primary)]">
                   {faq.question}
                 </span>
                 <span className="ml-4 flex-shrink-0">
                   {openIndex === origIndex ? (
-                    <ChevronUp className="text-emerald-900 transition-transform duration-300 rotate-180" />
+                    <ChevronUp className="text-emerald-900 dark:text-[var(--color-primary)] transition-transform duration-300 rotate-180" />
                   ) : (
-                    <ChevronDown className="text-emerald-900 transition-transform duration-300" />
+                    <ChevronDown className="text-emerald-900 dark:text-[var(--color-primary)] transition-transform duration-300" />
                   )}
                 </span>
-                <span className="absolute right-6 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#FFD700] opacity-60 group-hover:scale-125 transition-transform duration-300" />
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#FFD700] dark:bg-[var(--color-primary)] opacity-60 group-hover:scale-125 transition-transform duration-300" />
               </button>
               <motion.div
                 id={`faq-panel-${origIndex}`}
-                className={`overflow-hidden bg-white/80 text-emerald-900 transition-all duration-500 ease-in-out ${openIndex === origIndex ? "max-h-96 p-6" : "max-h-0 p-0"}`}
+                className={`overflow-hidden bg-white/80 dark:bg-[var(--color-surface)]/80 text-emerald-900 dark:text-[var(--color-text)] transition-all duration-500 ease-in-out ${openIndex === origIndex ? "max-h-96 p-6" : "max-h-0 p-0"}`}
                 initial={false}
                 animate={{ height: openIndex === origIndex ? "auto" : 0, opacity: openIndex === origIndex ? 1 : 0.5 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -151,7 +151,7 @@ const FAQs = () => {
 
       {/* Decorative Glow */}
       <div className="pointer-events-none fixed inset-0 z-[-1] flex items-center justify-center">
-        <div className="w-[600px] h-[600px] rounded-full bg-[#FFD700]/10 blur-3xl opacity-60 animate-pulse" />
+        <div className="w-[600px] h-[600px] rounded-full bg-[#FFD700]/10 dark:bg-[var(--color-primary)]/10 blur-3xl opacity-60 animate-pulse" />
       </div>
     </div>
   );

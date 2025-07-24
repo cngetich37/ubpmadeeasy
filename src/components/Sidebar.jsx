@@ -34,7 +34,7 @@ const SideBar = () => {
     return () => clearInterval(interval);
   }, []);
   return (
-    <nav className="hidden bg-white md:flex flex-col w-1/5 h-screen rounded-md overflow-y-auto">
+    <nav className="hidden bg-white dark:bg-[var(--color-surface)] md:flex flex-col w-1/5 h-screen rounded-md overflow-y-auto">
       <motion.div
         key={key}
         style={divStyle}
@@ -50,7 +50,7 @@ const SideBar = () => {
         className="flex flex-row font-bold italic justify-center mb-2"
       >
         <motion.span
-          className="text-[#065A38]"
+          className="text-[#065A38] dark:text-[var(--color-primary)]"
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
@@ -65,7 +65,7 @@ const SideBar = () => {
           UBP
         </motion.span>
         <motion.span
-          className="text-[#FBCC1A]"
+          className="text-[#FBCC1A] dark:text-[var(--color-primary)]"
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 10 }}
@@ -83,7 +83,7 @@ const SideBar = () => {
       <ul className="grid grid-cols-1 gap-6">
         {menuItems.map((item, index) => (
           <Link key={index} to={item.href} className="group">
-            <li className="flex items-center gap-5 bg-[#FBCC1A] text-[#065A38] p-4 rounded-lg shadow-md cursor-pointer transition duration-300 hover:bg-[#FFD700] hover:scale-105">
+            <li className="flex items-center gap-5 bg-[#FBCC1A] dark:bg-[var(--color-primary)] text-[#065A38] dark:text-[var(--color-bg)] p-4 rounded-lg shadow-md cursor-pointer transition duration-300 hover:bg-[#FFD700] dark:hover:bg-yellow-300 hover:scale-105">
               <span className="text-3xl">{item.icon}</span>
               <span className="font-medium text-lg">{item.label}</span>
             </li>

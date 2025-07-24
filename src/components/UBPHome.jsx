@@ -29,7 +29,7 @@ const featureData = [
 
 const UBPHome = () => {
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 text-white flex items-center justify-center px-2 sm:px-6 py-8 sm:py-12 overflow-hidden">
+    <main className="relative min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 dark:from-[var(--color-bg)] dark:via-[var(--color-surface)] dark:to-[var(--color-bg)] text-white dark:text-[var(--color-text)] flex items-center justify-center px-2 sm:px-6 py-8 sm:py-12 overflow-hidden">
       {/* Animated Background Blobs */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[350px] h-[350px] bg-[#FFD700]/20 rounded-full blur-3xl animate-pulse" />
@@ -53,18 +53,18 @@ const UBPHome = () => {
             <img
               src={logo}
               alt="UBP Logo"
-              className="w-28 sm:w-36 md:w-44 mx-auto rounded-full border-4 border-[#FFD700] shadow-2xl bg-white p-1 animate-spin-slow"
+              className="w-28 sm:w-36 md:w-44 mx-auto rounded-full border-4 border-[#FFD700] dark:border-[var(--color-primary)] shadow-2xl bg-white dark:bg-[var(--color-surface)] p-1 animate-spin-slow"
               style={{ boxShadow: '0 0 40px 0 #FFD70055' }}
             />
             <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-3 bg-[#FFD700]/40 blur-lg rounded-full opacity-70" />
           </motion.div>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] via-[#FFEC8B] to-[#FFD700] drop-shadow-lg tracking-tight mb-3">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-center bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] via-[#FFEC8B] to-[#FFD700] dark:from-[var(--color-primary)] dark:via-yellow-300 dark:to-[var(--color-primary)] drop-shadow-lg tracking-tight mb-3">
             UBPMadeEasy
           </h1>
-          <p className="text-xl sm:text-2xl md:text-3xl font-light max-w-2xl mx-auto text-center text-white/90 leading-relaxed mb-2">
+          <p className="text-xl sm:text-2xl md:text-3xl font-light max-w-2xl mx-auto text-center text-white/90 dark:text-[var(--color-text)]/90 leading-relaxed mb-2">
             Navigate the UBP application process with clarity and confidence - every step made easy.
           </p>
-          <span className="inline-block bg-[#FFD700]/20 text-[#FFD700] text-xs sm:text-sm font-semibold px-4 py-1 rounded-full mt-2 tracking-wide shadow-sm">No registration needed</span>
+          <span className="inline-block bg-[#FFD700]/20 dark:bg-[var(--color-primary)]/20 text-[#FFD700] dark:text-[var(--color-primary)] text-xs sm:text-sm font-semibold px-4 py-1 rounded-full mt-2 tracking-wide shadow-sm">No registration needed</span>
         </motion.header>
 
         {/* Features Section */}
@@ -102,23 +102,23 @@ const UBPHome = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
         >
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-7 drop-shadow-md">
-            Ready to <span className="text-[#FFD700]">simplify</span> your UBP journey?
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white dark:text-[var(--color-text)] mb-7 drop-shadow-md">
+            Ready to <span className="text-[#FFD700] dark:text-[var(--color-primary)]">simplify</span> your UBP journey?
           </h2>
           <Link to="/terms" aria-label="Terms and Conditions">
             <motion.button
               whileHover={{ scale: 1.07, boxShadow: "0 10px 30px -5px rgba(255, 215, 0, 0.5)" }}
               whileTap={{ scale: 0.97 }}
-              className="relative bg-gradient-to-r from-[#FFD700] to-[#FFEC8B] text-emerald-900 px-12 sm:px-16 py-4 sm:py-5 rounded-full text-xl sm:text-2xl font-extrabold shadow-2xl hover:shadow-emerald-900/30 transition-all duration-300 overflow-hidden group border-2 border-[#FFD700]/70"
+              className="relative bg-gradient-to-r from-[#FFD700] to-[#FFEC8B] dark:from-[var(--color-primary)] dark:to-yellow-300 text-emerald-900 dark:text-[var(--color-bg)] px-12 sm:px-16 py-4 sm:py-5 rounded-full text-xl sm:text-2xl font-extrabold shadow-2xl hover:shadow-emerald-900/30 transition-all duration-300 overflow-hidden group border-2 border-[#FFD700]/70 dark:border-[var(--color-primary)]/70"
               aria-label="Get Started with UBP Guide"
             >
               <span className="relative z-10">Get Started Now</span>
               {/* Animated sparkles */}
-              <span className="absolute left-1/2 top-1/2 w-32 h-32 bg-[#FFD700]/30 rounded-full blur-2xl opacity-0 group-hover:opacity-80 transition-all duration-500 -translate-x-1/2 -translate-y-1/2" />
-              <span className="absolute right-6 top-2 w-3 h-3 bg-[#FFD700] rounded-full blur-sm opacity-70 animate-ping" />
+              <span className="absolute left-1/2 top-1/2 w-32 h-32 bg-[#FFD700]/30 dark:bg-[var(--color-primary)]/30 rounded-full blur-2xl opacity-0 group-hover:opacity-80 transition-all duration-500 -translate-x-1/2 -translate-y-1/2" />
+              <span className="absolute right-6 top-2 w-3 h-3 bg-[#FFD700] dark:bg-[var(--color-primary)] rounded-full blur-sm opacity-70 animate-ping" />
             </motion.button>
           </Link>
-          <div className="mt-3 text-xs text-white/60">By continuing, you agree to our <Link to="/terms" className="underline text-[#FFD700] hover:text-[#FFEC8B]">Terms & Conditions</Link>.</div>
+          <div className="mt-3 text-xs text-white/60 dark:text-[var(--color-text)]/60">By continuing, you agree to our <Link to="/terms" className="underline text-[#FFD700] dark:text-[var(--color-primary)] hover:text-[#FFEC8B] dark:hover:text-yellow-300">Terms & Conditions</Link>.</div>
         </motion.section>
       </div>
     </main>

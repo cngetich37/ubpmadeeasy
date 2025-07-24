@@ -60,7 +60,7 @@ const AdvertFormat = () => {
   };
 
   return (
-    <main className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 min-h-screen flex flex-col items-center p-4">
+    <main className="bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 dark:from-[var(--color-bg)] dark:via-[var(--color-surface)] dark:to-[var(--color-bg)] min-h-screen flex flex-col items-center p-4">
       <Helmet>
         <title>Advert Formats - Browse advert formats</title>
         <meta
@@ -70,12 +70,12 @@ const AdvertFormat = () => {
         <meta name="author" content="Collins Ngetich" />
       </Helmet>
 
-      <section className="bg-white/90 w-full max-w-5xl p-8 rounded-3xl shadow-2xl min-h-[80vh] flex flex-col items-center relative">
+      <section className="bg-white/90 dark:bg-[var(--color-surface)]/90 w-full max-w-5xl p-8 rounded-3xl shadow-2xl min-h-[80vh] flex flex-col items-center relative">
         <header className="w-full flex flex-col items-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-emerald-900 mb-2 tracking-tight text-center drop-shadow-lg">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-emerald-900 dark:text-white mb-2 tracking-tight text-center drop-shadow-lg">
             Advert (Small Formats)
           </h1>
-          <span className="text-lg text-emerald-800 font-medium mb-2 text-center">Discover, search, and explore various advert types</span>
+          <span className="text-lg text-emerald-800 dark:text-[var(--color-text)] font-medium mb-2 text-center">Discover, search, and explore various advert types</span>
           <div className="w-24 h-1 bg-[#FFD700] rounded-full mb-2" />
         </header>
 
@@ -92,7 +92,7 @@ const AdvertFormat = () => {
             placeholder="Search advert type..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full pl-12 pr-4 py-3 border-2 border-emerald-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] bg-white text-emerald-900 text-lg shadow-sm transition-all duration-200"
+            className="w-full pl-12 pr-4 py-3 border-2 border-emerald-900 dark:border-[var(--color-primary)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] dark:focus:ring-[var(--color-primary)] bg-white dark:bg-[var(--color-surface)] text-emerald-900 dark:text-[var(--color-text)] text-lg shadow-sm transition-all duration-200"
             autoComplete="off"
           />
         </div>
@@ -104,7 +104,7 @@ const AdvertFormat = () => {
               filteredData.map((item) => (
                 <figure
                   key={item.id}
-                  className="relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 border border-emerald-100 group flex flex-col h-full"
+                  className="relative bg-white dark:bg-[var(--color-surface)] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 border border-emerald-100 dark:border-[var(--color-primary)] group flex flex-col h-full"
                 >
                   <div className="relative w-full h-52 overflow-hidden">
                     <img
@@ -112,9 +112,9 @@ const AdvertFormat = () => {
                       alt={item.imageDescription || 'Advert Image'}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 group-hover:brightness-90"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#FFD700]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#FFD700]/80 dark:from-[var(--color-primary)]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
-                  <figcaption className="flex-1 flex items-center justify-center px-4 py-3 bg-[#FFD700]/90 text-emerald-900 font-semibold text-center text-base md:text-lg rounded-b-2xl shadow-inner truncate">
+                  <figcaption className="flex-1 flex items-center justify-center px-4 py-3 bg-[#FFD700]/90 dark:bg-[var(--color-primary)]/90 text-emerald-900 dark:text-[var(--color-bg)] font-semibold text-center text-base md:text-lg rounded-b-2xl shadow-inner truncate">
                     {item.imageDescription}
                   </figcaption>
                 </figure>
@@ -124,7 +124,7 @@ const AdvertFormat = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#FFD700" className="w-16 h-16 mb-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25m0 0A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25v3.75m7.5 0h-7.5m7.5 0v7.5A2.25 2.25 0 0113.5 19.5h-3A2.25 2.25 0 018.25 17.25v-7.5" />
                 </svg>
-                <p className="text-center text-emerald-900 text-lg font-medium">No matching adverts found.</p>
+                <p className="text-center text-emerald-900 dark:text-white text-lg font-medium">No matching adverts found.</p>
               </div>
             )}
           </div>

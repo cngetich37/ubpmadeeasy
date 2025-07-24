@@ -1055,11 +1055,11 @@ function CombinedSearch() {
         />
         <meta name="author" content="Collins Ngetich" />
       </Helmet>
-      <main className="flex flex-col md:flex-row justify-center items-center min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 pt-4 pb-4 pl-2">
+      <main className="flex flex-col md:flex-row justify-center items-center min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 dark:from-[var(--color-bg)] dark:via-[var(--color-surface)] dark:to-[var(--color-bg)] pt-4 pb-4 pl-2">
         <div className="flex flex-col justify-center items-center md:w-full w-full max-w-screen-5xl mr-auto ml-auto overflow-x-auto">
           <div
             id="capture"
-            className="bg-white border-2 border-[#FFD700] shadow-xl shadow-yellow-500/20 md:mb-2 md:w-4/5 w-11/12 md:h-auto h-auto md:mt-6 md:ml-2 p-6 rounded-2xl overflow-y-auto mb-16 transition-all duration-300"
+            className="bg-white dark:bg-[var(--color-surface)] border-2 border-[#FFD700] dark:border-[var(--color-primary)] shadow-xl shadow-yellow-500/20 md:mb-2 md:w-4/5 w-11/12 md:h-auto h-auto md:mt-6 md:ml-2 p-6 rounded-2xl overflow-y-auto mb-16 transition-all duration-300"
           >
             {/* Tab Navigation */}
             <div className="flex justify-center gap-x-2 mb-8">
@@ -1067,8 +1067,8 @@ function CombinedSearch() {
                 className={`w-1/2 py-3 px-6 font-bold text-lg rounded-full transition-all duration-200 focus:outline-none shadow-md border-2
                   ${
                     activeTab === "business"
-                      ? "bg-emerald-900 text-[#FFD700] border-[#FFD700] scale-105"
-                      : "bg-white text-emerald-900 border-emerald-100 hover:bg-[#FFD700]/10"
+                      ? "bg-emerald-900 text-[#FFD700] border-[#FFD700] dark:bg-[var(--color-primary)] dark:text-[var(--color-bg)] dark:border-[var(--color-primary)] scale-105"
+                      : "bg-white dark:bg-[var(--color-surface)] text-emerald-900 dark:text-[var(--color-text)] border-emerald-100 dark:border-[var(--color-primary)] hover:bg-[#FFD700]/10 dark:hover:bg-[var(--color-primary)]/10"
                   }
                 `}
                 onClick={() => setActiveTab("business")}
@@ -1080,8 +1080,8 @@ function CombinedSearch() {
                 className={`w-1/2 py-3 px-6 font-bold text-lg rounded-full transition-all duration-200 focus:outline-none shadow-md border-2
                   ${
                     activeTab === "advertisement"
-                      ? "bg-emerald-900 text-[#FFD700] border-[#FFD700] scale-105"
-                      : "bg-white text-emerald-900 border-emerald-100 hover:bg-[#FFD700]/10"
+                      ? "bg-emerald-900 text-[#FFD700] border-[#FFD700] dark:bg-[var(--color-primary)] dark:text-[var(--color-bg)] dark:border-[var(--color-primary)] scale-105"
+                      : "bg-white dark:bg-[var(--color-surface)] text-emerald-900 dark:text-[var(--color-text)] border-emerald-100 dark:border-[var(--color-primary)] hover:bg-[#FFD700]/10 dark:hover:bg-[var(--color-primary)]/10"
                   }
                 `}
                 onClick={() => setActiveTab("advertisement")}
@@ -1095,7 +1095,7 @@ function CombinedSearch() {
             {activeTab === "business" && (
               <>
                 <header>
-                  <h1 className="text-3xl font-extrabold text-center text-emerald-900 mb-6 tracking-tight drop-shadow-sm">
+                  <h1 className="text-3xl font-extrabold text-center text-emerald-900 dark:text-white mb-6 tracking-tight drop-shadow-sm">
                     Business Activity Information
                   </h1>
                 </header>
@@ -1133,7 +1133,7 @@ function CombinedSearch() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Industry
                     </label>
                     <input
@@ -1143,13 +1143,13 @@ function CombinedSearch() {
                       className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {industry !== "" && industryMessage && (
-                      <p className="text-xs text-emerald-900 mt-1">
+                      <p className="text-xs text-emerald-900 dark:text-white mt-1">
                         {industryMessage}
                       </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Business Category
                     </label>
                     <input
@@ -1159,13 +1159,13 @@ function CombinedSearch() {
                       className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {businessCategory !== "" && businessCategoryMessage && (
-                      <p className="text-xs text-emerald-900 mt-1">
+                      <p className="text-xs text-emerald-900 dark:text-white mt-1">
                         {businessCategoryMessage}
                       </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Business Sub category
                     </label>
                     <input
@@ -1176,13 +1176,13 @@ function CombinedSearch() {
                     />
                     {businessSubCategory !== "" &&
                       businessSubCategoryMessage && (
-                        <p className="text-xs text-emerald-900 mt-1">
+                        <p className="text-xs text-emerald-900 dark:text-white mt-1">
                           {businessSubCategoryMessage}
                         </p>
                       )}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Business Activity
                     </label>
                     <input
@@ -1192,7 +1192,7 @@ function CombinedSearch() {
                       className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {businessActivity !== "" && businessActivityMessage && (
-                      <p className="text-xs text-emerald-900 mt-1">
+                      <p className="text-xs text-emerald-900 dark:text-white mt-1">
                         {businessActivityMessage}
                       </p>
                     )}
@@ -1203,7 +1203,7 @@ function CombinedSearch() {
                   <div className="mb-4">
                     <label
                       htmlFor="businessDescriptionFilter"
-                      className="block text-base font-semibold text-emerald-900 mb-2"
+                      className="block text-base font-semibold text-emerald-900 dark:text-white mb-2"
                     >
                       {labelText
                         .replace(/Hospitals/g, "beds")
@@ -1385,7 +1385,7 @@ function CombinedSearch() {
             {activeTab === "advertisement" && (
               <>
                 <header>
-                  <h1 className="text-3xl font-extrabold text-center text-emerald-900 mb-6 tracking-tight drop-shadow-sm">
+                  <h1 className="text-3xl font-extrabold text-center text-emerald-900 dark:text-white mb-6 tracking-tight drop-shadow-sm">
                     Advert Small Formats
                   </h1>
                 </header>
@@ -1422,7 +1422,7 @@ function CombinedSearch() {
                 </div>
                 <form className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Advertisement Category
                     </label>
                     <input
@@ -1437,7 +1437,7 @@ function CombinedSearch() {
                       applicationFee === 0 ? "hidden" : ""
                     }`}
                   >
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Application Fee (New Applicant)
                     </label>
                     <input
@@ -1456,7 +1456,7 @@ function CombinedSearch() {
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Length (m)
                     </label>
                     <div className="relative">
@@ -1512,7 +1512,7 @@ function CombinedSearch() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Width (m)
                     </label>
                     <div className="relative">
@@ -1574,7 +1574,7 @@ function CombinedSearch() {
                           firstSquareMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                        <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                           First m²
                         </label>
                         <input
@@ -1600,7 +1600,7 @@ function CombinedSearch() {
                           extraSquareMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                        <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                           Each Extra m²
                         </label>
                         <input
@@ -1626,7 +1626,7 @@ function CombinedSearch() {
                           firstThreeMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                        <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                           First 3m²
                         </label>
                         <input
@@ -1652,7 +1652,7 @@ function CombinedSearch() {
                           firstTenSquareMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                        <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                           First 10m²
                         </label>
                         <input
@@ -1676,7 +1676,7 @@ function CombinedSearch() {
                     </>
                   )}
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Licence Fee (Renewal)
                     </label>
                     <input
@@ -1695,7 +1695,7 @@ function CombinedSearch() {
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                    <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                       Licence Fee (New Applicant)
                     </label>
                     <input
@@ -1716,7 +1716,7 @@ function CombinedSearch() {
                   {/* Number of Sides field only for certain advert types */}
                   {sideAdvertTypes.includes(advertSearchInput) && (
                     <div className="flex flex-col gap-1">
-                      <label className="text-md text-emerald-900 font-semibold mb-1">
+                      <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                         Number of Sides
                       </label>
                       <input
@@ -1736,7 +1736,7 @@ function CombinedSearch() {
                     </div>
                   )}
                 </form>
-                <div className="text-emerald-900 mt-2 sm:mt-4 lg:mt-6 max-w-1/2 mx-auto text-center text-base">
+                <div className="text-emerald-900 dark:text-white mt-2 sm:mt-4 lg:mt-6 max-w-1/2 mx-auto text-center text-base">
                   <span className="font-bold">Important Note:</span> If the {" "}
                   <span className="font-semibold">length</span> and {" "}
                   <span className="font-semibold">width</span> do not change
@@ -1762,22 +1762,22 @@ function CombinedSearch() {
             {/* Common Modal */}
             {isModalOpen && (
               <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                <div className="bg-white w-11/12 max-w-md rounded-2xl shadow-2xl p-8 relative border-2 border-[#FFD700]">
+                <div className="bg-white dark:bg-[var(--color-surface)] w-11/12 max-w-md rounded-2xl shadow-2xl p-8 relative border-2 border-[#FFD700] dark:border-[var(--color-primary)]">
                   <button
                     onClick={closeModal}
-                    className="absolute top-4 right-4 text-emerald-900 font-bold text-2xl hover:text-yellow-500 transition"
+                    className="absolute top-4 right-4 text-emerald-900 dark:text-[var(--color-primary)] font-bold text-2xl hover:text-yellow-500 dark:hover:text-yellow-300 transition"
                     aria-label="Close modal"
                   >
                     ✕
                   </button>
-                  <h2 className="text-emerald-900 font-extrabold text-2xl mb-4 text-center">
+                  <h2 className="text-emerald-900 dark:text-[var(--color-primary)] font-extrabold text-2xl mb-4 text-center">
                     Missing Information
                   </h2>
-                  <p className="text-lg text-red-500 text-center font-semibold mb-4">{uploadMessage}</p>
+                  <p className="text-lg text-red-500 dark:text-white text-center font-semibold mb-4">{uploadMessage}</p>
                   <div className="flex justify-center">
                     <button
                       onClick={closeModal}
-                      className="bg-emerald-900 text-[#FFD700] font-bold py-2 px-6 rounded-full shadow hover:bg-emerald-800 hover:text-yellow-300 transition"
+                      className="bg-emerald-900 dark:bg-[var(--color-primary)] text-[#FFD700] dark:text-[var(--color-bg)] font-bold py-2 px-6 rounded-full shadow hover:bg-emerald-800 dark:hover:bg-yellow-300 hover:text-yellow-300 dark:hover:text-[var(--color-bg)] transition"
                     >
                       Close
                     </button>
