@@ -1059,31 +1059,33 @@ function CombinedSearch() {
         <div className="flex flex-col justify-center items-center md:w-full w-full max-w-screen-5xl mr-auto ml-auto overflow-x-auto">
           <div
             id="capture"
-            className="bg-white  border-4  border-yellow-500 shadow-lg shadow-yellow-500/30 md:mb-2 md:w-3/4 w-11/12 md:h-screen h-3/4 md:mt-2 md:ml-2 p-4 rounded-md overflow-y-auto mb-16"
+            className="bg-white border-2 border-[#FFD700] shadow-xl shadow-yellow-500/20 md:mb-2 md:w-4/5 w-11/12 md:h-auto h-auto md:mt-6 md:ml-2 p-6 rounded-2xl overflow-y-auto mb-16 transition-all duration-300"
           >
             {/* Tab Navigation */}
-            <div className="flex justify-center gap-x-2 border-b border-[#FFD700] mb-6">
+            <div className="flex justify-center gap-x-2 mb-8">
               <button
-                className={`w-1/2 md:w-1/2 py-2 px-6 font-semibold text-lg rounded-t-md transition-all duration-200 focus:outline-none
+                className={`w-1/2 py-3 px-6 font-bold text-lg rounded-full transition-all duration-200 focus:outline-none shadow-md border-2
                   ${
                     activeTab === "business"
-                      ? "bg-emerald-900 text-[#FFD700] border-b-4 border-[#FFD700] shadow-md"
-                      : "bg-white text-emerald-900 hover:bg-[#FFD700]/20 border-b-4 border-transparent"
+                      ? "bg-emerald-900 text-[#FFD700] border-[#FFD700] scale-105"
+                      : "bg-white text-emerald-900 border-emerald-100 hover:bg-[#FFD700]/10"
                   }
                 `}
                 onClick={() => setActiveTab("business")}
+                aria-selected={activeTab === "business"}
               >
                 UBP
               </button>
               <button
-                className={`w-1/2 md:w-1/2 py-2 px-6 font-semibold text-lg rounded-t-md transition-all duration-200 focus:outline-none
+                className={`w-1/2 py-3 px-6 font-bold text-lg rounded-full transition-all duration-200 focus:outline-none shadow-md border-2
                   ${
                     activeTab === "advertisement"
-                      ? "bg-emerald-900 text-[#FFD700] border-b-4 border-[#FFD700] shadow-md"
-                      : "bg-white text-emerald-900 hover:bg-[#FFD700]/20 border-b-4 border-transparent"
+                      ? "bg-emerald-900 text-[#FFD700] border-[#FFD700] scale-105"
+                      : "bg-white text-emerald-900 border-emerald-100 hover:bg-[#FFD700]/10"
                   }
                 `}
                 onClick={() => setActiveTab("advertisement")}
+                aria-selected={activeTab === "advertisement"}
               >
                 Advert
               </button>
@@ -1093,113 +1095,115 @@ function CombinedSearch() {
             {activeTab === "business" && (
               <>
                 <header>
-                  <h1 className="text-2xl font-semibold text-center text-emerald-900 mb-4">
+                  <h1 className="text-3xl font-extrabold text-center text-emerald-900 mb-6 tracking-tight drop-shadow-sm">
                     Business Activity Information
                   </h1>
                 </header>
 
-                <div className="flex flex-row">
-                  <Select
-                    options={businessOptions}
-                    onChange={(selectedOption) =>
-                      setSearchInput(selectedOption.value)
-                    }
-                    value={businessOptions.find(
-                      (option) => option.value === searchInput
-                    )}
-                    className="md:w-1/2 w-full mb-4 mr-4"
-                    styles={customStyles}
-                    isSearchable={true}
-                    placeholder="Search a business activity"
-                    aria-label="Select a business activity"
-                  />
+                <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
+                  <div className="w-full md:w-2/3">
+                    <Select
+                      options={businessOptions}
+                      onChange={(selectedOption) =>
+                        setSearchInput(selectedOption.value)
+                      }
+                      value={businessOptions.find(
+                        (option) => option.value === searchInput
+                      )}
+                      className="w-full"
+                      styles={customStyles}
+                      isSearchable={true}
+                      placeholder="Search a business activity"
+                      aria-label="Select a business activity"
+                    />
+                  </div>
                   <span>
                     {loading ? (
-                      <div className="flex items-center mt-2">
+                      <div className="flex items-center">
                         <div
-                          className="loading loading-spinner bg-[#FFD700] text-warning loading-md"
+                          className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#FFD700] mr-2"
                           role="status"
                         />
-                        <span className="hidden md:block text-emerald-900 font-bold ml-1">
+                        <span className="text-emerald-900 font-bold ml-1">
                           Loading...
                         </span>
                       </div>
                     ) : null}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
                       Industry
                     </label>
                     <input
                       type="text"
                       value={`${industry}`}
                       readOnly
-                      className="input input-bordered bg-white text-black p-2 rounded-md border-[#FFD700] focus:border-GRAY-900 text-sm"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {industry !== "" && industryMessage && (
-                      <p className="text-sm text-emerald-900">
+                      <p className="text-xs text-emerald-900 mt-1">
                         {industryMessage}
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
                       Business Category
                     </label>
                     <input
                       type="text"
                       value={`${businessCategory}`}
                       readOnly
-                      className="input input-bordered bg-white text-black p-2 rounded-md border-[#FFD700] focus:border-GRAY-900 text-sm"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {businessCategory !== "" && businessCategoryMessage && (
-                      <p className="text-sm text-emerald-900">
+                      <p className="text-xs text-emerald-900 mt-1">
                         {businessCategoryMessage}
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
                       Business Sub category
                     </label>
                     <input
                       type="text"
                       value={`${businessSubCategory}`}
                       readOnly
-                      className="input input-bordered bg-white text-black text-sm p-2 rounded-md border-[#FFD700] focus:border-GRAY-900"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {businessSubCategory !== "" &&
                       businessSubCategoryMessage && (
-                        <p className="text-sm text-emerald-900">
+                        <p className="text-xs text-emerald-900 mt-1">
                           {businessSubCategoryMessage}
                         </p>
                       )}
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
                       Business Activity
                     </label>
                     <input
                       type="text"
                       value={`${businessActivity}`}
                       readOnly
-                      className="input input-bordered bg-white text-black p-2 rounded-md border-[#FFD700] focus:border-GRAY-900 text-sm"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                     {businessActivity !== "" && businessActivityMessage && (
-                      <p className="text-sm text-emerald-900">
+                      <p className="text-xs text-emerald-900 mt-1">
                         {businessActivityMessage}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="max-w-[desired-width] overflow-x-auto mt-6">
-                  <div className="mt-2">
+                <div className="w-full overflow-x-auto mt-8">
+                  <div className="mb-4">
                     <label
                       htmlFor="businessDescriptionFilter"
-                      className="block text-sm font-medium text-emerald-900 mb-2"
+                      className="block text-base font-semibold text-emerald-900 mb-2"
                     >
                       {labelText
                         .replace(/Hospitals/g, "beds")
@@ -1210,99 +1214,135 @@ function CombinedSearch() {
                       id="businessDescriptionFilter"
                       value={filterValue}
                       onChange={(e) => setFilterValue(e.target.value)}
-                      className="input input-bordered text-black bg-white p-2 rounded-md border-[#FFD700] focus:border-GRAY-900 px-2 py-1 border  w-full md:w-1/3 mb-4 mr-4"
+                      className="bg-white border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition w-full md:w-1/3"
                     />
                   </div>
-                  <table className="table-auto max-w-full divide-y divide-GRAY-900">
-                    <thead className="bg-emerald-900 text-[#FFD700]">
-                      <tr>
-                        {[
-                          "Business Description",
-                          "Trade Licence",
-                          "Fire Clearance",
-                          "Food Hygiene",
-                          "Health Certificate",
-                          "Pest Control",
-                          "Total",
-                        ].map((header, index) => (
-                          <th
-                            key={index}
-                            className="px-6 py-3 text-left text-xs font-semibold text-[#FFD700] uppercase tracking-wider border-b-2 border-[#FFD700] transition-all duration-300"
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-GRAY-900 text-black">
-                      {tableData?.financeActs
-                        ?.filter((row) => {
-                          if (!filterValue) return true;
-                          const inputNumber = parseInt(filterValue);
-                          return (
-                            !isNaN(inputNumber) &&
-                            matchNumberRange(
-                              row.businessDescription,
-                              inputNumber
-                            )
-                          );
-                        })
-                        .reduce((uniqueRows, row) => {
-                          if (
-                            !uniqueRows.some(
-                              (uniqueRow) =>
-                                uniqueRow.businessDescription ===
-                                row.businessDescription
-                            )
-                          ) {
-                            uniqueRows.push(row);
-                          }
-                          return uniqueRows;
-                        }, [])
-                        .map((row, index) => (
-                          <tr key={index}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              {row.businessDescription}
-                            </td>
-                            {[
-                              "tradeLicence",
-                              "fireClearance",
-                              "foodHygiene",
-                              "healthCertificate",
-                              "pestControl",
-                            ].map((key, i) => (
-                              <td
-                                key={i}
-                                className="px-3 py-2 whitespace-nowrap"
-                              >
-                                {!isNaN(parseInt(row[key]))
-                                  ? parseInt(row[key]).toLocaleString("en-KE", {
-                                      style: "currency",
-                                      currency: "KES",
-                                      minimumFractionDigits: 2,
-                                    })
-                                  : "KES 0.00"}
-                              </td>
-                            ))}
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              {(
+                  <div className="rounded-xl shadow overflow-hidden w-full overflow-x-auto">
+                    <table className="min-w-full divide-y divide-[#FFD700]">
+                      <thead className="bg-emerald-900 text-[#FFD700] sticky top-0 z-10">
+                        <tr>
+                          {[
+                            "Business Description",
+                            "Trade Licence",
+                            "Fire Clearance",
+                            "Food Hygiene",
+                            "Health Certificate",
+                            "Pest Control",
+                            "Total",
+                          ].map((header, index) => (
+                            <th
+                              key={index}
+                              className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider border-b-2 border-[#FFD700]"
+                            >
+                              {header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200 text-black">
+                        {(() => {
+                          // Filter and deduplicate rows as in the table
+                          const filteredRows = tableData?.financeActs
+                            ?.filter((row) => {
+                              if (!filterValue) return true;
+                              const inputNumber = parseInt(filterValue);
+                              return (
+                                !isNaN(inputNumber) &&
+                                matchNumberRange(
+                                  row.businessDescription,
+                                  inputNumber
+                                )
+                              );
+                            })
+                            .reduce((uniqueRows, row) => {
+                              if (
+                                !uniqueRows.some(
+                                  (uniqueRow) =>
+                                    uniqueRow.businessDescription ===
+                                    row.businessDescription
+                                )
+                              ) {
+                                uniqueRows.push(row);
+                              }
+                              return uniqueRows;
+                            }, []);
+
+                          // Calculate totals for each column
+                          const totals = filteredRows?.reduce(
+                            (acc, row) => {
+                              acc.tradeLicence += parseInt(row.tradeLicence) || 0;
+                              acc.fireClearance += parseInt(row.fireClearance) || 0;
+                              acc.foodHygiene += parseInt(row.foodHygiene) || 0;
+                              acc.healthCertificate += parseInt(row.healthCertificate) || 0;
+                              acc.pestControl += parseInt(row.pestControl) || 0;
+                              acc.total +=
                                 (parseInt(row.tradeLicence) || 0) +
                                 (parseInt(row.fireClearance) || 0) +
                                 (parseInt(row.foodHygiene) || 0) +
                                 (parseInt(row.healthCertificate) || 0) +
-                                (parseInt(row.pestControl) || 0)
-                              ).toLocaleString("en-KE", {
-                                style: "currency",
-                                currency: "KES",
-                                minimumFractionDigits: 2,
+                                (parseInt(row.pestControl) || 0);
+                              return acc;
+                            },
+                            {
+                              tradeLicence: 0,
+                              fireClearance: 0,
+                              foodHygiene: 0,
+                              healthCertificate: 0,
+                              pestControl: 0,
+                              total: 0,
+                            }
+                          );
+
+                          return (
+                            <>
+                              {filteredRows?.map((row, index) => {
+                                const rowTotal =
+                                  (parseInt(row.tradeLicence) || 0) +
+                                  (parseInt(row.fireClearance) || 0) +
+                                  (parseInt(row.foodHygiene) || 0) +
+                                  (parseInt(row.healthCertificate) || 0) +
+                                  (parseInt(row.pestControl) || 0);
+                                return (
+                                  <tr
+                                    key={index}
+                                    className={
+                                      index % 2 === 0
+                                        ? "bg-gray-50 hover:bg-yellow-50 transition"
+                                        : "bg-white hover:bg-yellow-50 transition"
+                                    }
+                                  >
+                                    <td className="px-4 py-2 whitespace-nowrap font-medium">
+                                      {row.businessDescription}
+                                    </td>
+                                    {["tradeLicence", "fireClearance", "foodHygiene", "healthCertificate", "pestControl"].map((key, i) => (
+                                      <td key={i} className="px-4 py-2 whitespace-nowrap">
+                                        {!isNaN(parseInt(row[key]))
+                                          ? parseInt(row[key]).toLocaleString("en-KE", {
+                                              style: "currency",
+                                              currency: "KES",
+                                              minimumFractionDigits: 2,
+                                            })
+                                          : "KES 0.00"}
+                                      </td>
+                                    ))}
+                                    <td className="px-4 py-2 whitespace-nowrap font-semibold text-emerald-900">
+                                      {rowTotal.toLocaleString("en-KE", {
+                                        style: "currency",
+                                        currency: "KES",
+                                        minimumFractionDigits: 2,
+                                      })}
+                                    </td>
+                                  </tr>
+                                );
                               })}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-end mt-6">
                   <button
                     onClick={() => {
                       // Filter the data as in the table before generating PDF
@@ -1333,7 +1373,7 @@ function CombinedSearch() {
                       // Call shareAsPDF with filteredRows
                       shareAsPDF({ ...tableData, financeActs: filteredRows });
                     }}
-                    className="btn bg-emerald-900 mb-8  text-[#FFD700] font-semibold py-2 px-4 rounded-md"
+                    className="bg-emerald-900 text-[#FFD700] font-bold py-2 px-6 rounded-full shadow-lg hover:bg-emerald-800 hover:text-yellow-300 transition mb-8"
                   >
                     Download PDF
                   </button>
@@ -1345,58 +1385,60 @@ function CombinedSearch() {
             {activeTab === "advertisement" && (
               <>
                 <header>
-                  <h1 className="text-2xl font-semibold text-center text-emerald-900 mb-4">
+                  <h1 className="text-3xl font-extrabold text-center text-emerald-900 mb-6 tracking-tight drop-shadow-sm">
                     Advert Small Formats
                   </h1>
                 </header>
-                <div className="flex flex-row">
-                  <Select
-                    options={advertOptions}
-                    onChange={(selectedOption) =>
-                      setAdvertSearchInput(selectedOption.value)
-                    }
-                    value={advertOptions.find(
-                      (option) => option.value === advertSearchInput
-                    )}
-                    className="md:w-1/2 w-full mb-4 mr-4"
-                    styles={customStyles}
-                    isSearchable={true}
-                    placeholder="Search advert"
-                    aria-label="Search advert"
-                  />
+                <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
+                  <div className="w-full md:w-2/3">
+                    <Select
+                      options={advertOptions}
+                      onChange={(selectedOption) =>
+                        setAdvertSearchInput(selectedOption.value)
+                      }
+                      value={advertOptions.find(
+                        (option) => option.value === advertSearchInput
+                      )}
+                      className="w-full"
+                      styles={customStyles}
+                      isSearchable={true}
+                      placeholder="Search advert"
+                      aria-label="Search advert"
+                    />
+                  </div>
                   <span>
                     {loading ? (
-                      <div className="flex items-center mt-2">
+                      <div className="flex items-center">
                         <div
-                          className="loading loading-spinner bg-[#FFD700] text-warning loading-md"
+                          className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#FFD700] mr-2"
                           role="status"
                         />
-                        <span className="hidden md:block text-emerald-900 font-bold ml-1 ">
+                        <span className="text-emerald-900 font-bold ml-1">
                           Loading...
                         </span>
                       </div>
                     ) : null}
                   </span>
                 </div>
-                <form className="grid grid-cols-1 md:grid-cols-2 gap-4 md:mb-0 lg:mb-0 mb-8">
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
+                <form className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
                       Advertisement Category
                     </label>
                     <input
                       type="text"
                       value={advertisementCategory}
                       readOnly
-                      className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                   </div>
                   <div
-                    className={`flex flex-col ${
+                    className={`flex flex-col gap-1 ${
                       applicationFee === 0 ? "hidden" : ""
                     }`}
                   >
-                    <label className="text-md text-emerald-900 font-medium">
-                      Application Fee(New Applicant)
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                      Application Fee (New Applicant)
                     </label>
                     <input
                       type="text"
@@ -1410,12 +1452,12 @@ function CombinedSearch() {
                           : ""
                       }
                       readOnly
-                      className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
-                      Length(m)
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                      Length (m)
                     </label>
                     <div className="relative">
                       <input
@@ -1441,7 +1483,7 @@ function CombinedSearch() {
                             setLength("");
                           }
                         }}
-                        className="input input-success bg-white text-black p-2 rounded-md w-full"
+                        className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition w-full"
                       />
                       <div className="absolute top-2 right-2 bottom-2 flex flex-col">
                         <div className="flex justify-center w-full">
@@ -1469,9 +1511,9 @@ function CombinedSearch() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
-                      Width(m)
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                      Width (m)
                     </label>
                     <div className="relative">
                       <input
@@ -1497,7 +1539,7 @@ function CombinedSearch() {
                             setWidth("");
                           }
                         }}
-                        className="input input-success bg-white text-black p-2 rounded-md w-full"
+                        className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition w-full"
                       />
                       <div className="absolute top-2 right-2 bottom-2 flex flex-col">
                         <div className="flex justify-center w-full mt-0">
@@ -1528,12 +1570,12 @@ function CombinedSearch() {
                   {advertSearchInput !== "" && (
                     <>
                       <div
-                        className={`flex flex-col ${
+                        className={`flex flex-col gap-1 ${
                           firstSquareMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-medium">
-                          first m²
+                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                          First m²
                         </label>
                         <input
                           type="text"
@@ -1550,15 +1592,15 @@ function CombinedSearch() {
                               : ""
                           }
                           readOnly
-                          className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                          className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                         />
                       </div>
                       <div
-                        className={`flex flex-col ${
+                        className={`flex flex-col gap-1 ${
                           extraSquareMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-medium">
+                        <label className="text-md text-emerald-900 font-semibold mb-1">
                           Each Extra m²
                         </label>
                         <input
@@ -1576,16 +1618,16 @@ function CombinedSearch() {
                               : ""
                           }
                           readOnly
-                          className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                          className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                         />
                       </div>
                       <div
-                        className={`flex flex-col ${
+                        className={`flex flex-col gap-1 ${
                           firstThreeMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-medium">
-                          first 3m²
+                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                          First 3m²
                         </label>
                         <input
                           type="text"
@@ -1602,16 +1644,16 @@ function CombinedSearch() {
                               : ""
                           }
                           readOnly
-                          className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                          className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                         />
                       </div>
                       <div
-                        className={`flex flex-col ${
+                        className={`flex flex-col gap-1 ${
                           firstTenSquareMetres === 0 ? "hidden" : ""
                         }`}
                       >
-                        <label className="text-md text-emerald-900 font-medium">
-                          first 10m²
+                        <label className="text-md text-emerald-900 font-semibold mb-1">
+                          First 10m²
                         </label>
                         <input
                           type="text"
@@ -1628,14 +1670,14 @@ function CombinedSearch() {
                               : ""
                           }
                           readOnly
-                          className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                          className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                         />
                       </div>
                     </>
                   )}
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
-                      Licence Fee(Renewal)
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                      Licence Fee (Renewal)
                     </label>
                     <input
                       type="text"
@@ -1649,12 +1691,12 @@ function CombinedSearch() {
                           : "Ksh 0.00"
                       }
                       readOnly
-                      className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-md text-emerald-900 font-medium">
-                      Licence Fee(New Applicant)
+                  <div className="flex flex-col gap-1">
+                    <label className="text-md text-emerald-900 font-semibold mb-1">
+                      Licence Fee (New Applicant)
                     </label>
                     <input
                       type="text"
@@ -1668,13 +1710,13 @@ function CombinedSearch() {
                           : "Ksh 0.00"
                       }
                       readOnly
-                      className="input input-bordered input-success bg-white text-black p-2 rounded-md"
+                      className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition"
                     />
                   </div>
                   {/* Number of Sides field only for certain advert types */}
                   {sideAdvertTypes.includes(advertSearchInput) && (
-                    <div className="flex flex-col">
-                      <label className="text-md text-emerald-900 font-medium">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-md text-emerald-900 font-semibold mb-1">
                         Number of Sides
                       </label>
                       <input
@@ -1689,26 +1731,26 @@ function CombinedSearch() {
                             setNumberOfSides("");
                           }
                         }}
-                        className="input input-success bg-white text-black p-2 rounded-md w-full"
+                        className="bg-gray-50 border-2 border-[#FFD700] rounded-lg px-3 py-2 text-black text-base focus:ring-2 focus:ring-emerald-900 focus:border-emerald-900 transition w-full"
                       />
                     </div>
                   )}
                 </form>
-                <div className="text-emerald-900 mt-2 sm:mt-4 lg:mt-6 max-w-1/2 mx-auto">
-                  <span className="font-bold">Important Note:</span> If the{" "}
-                  <span className="font-semibold">length</span> and{" "}
+                <div className="text-emerald-900 mt-2 sm:mt-4 lg:mt-6 max-w-1/2 mx-auto text-center text-base">
+                  <span className="font-bold">Important Note:</span> If the {" "}
+                  <span className="font-semibold">length</span> and {" "}
                   <span className="font-semibold">width</span> do not change
                   when you press the up and down buttons, it indicates that the
-                  advert type carries a{" "}
-                  <span className="font-semibold">fixed rate</span>.{" "}
+                  advert type carries a {" "}
+                  <span className="font-semibold">fixed rate</span>. {" "}
                   <span role="img" aria-label="note">
                     📝
                   </span>
                 </div>
 
-                <div className="flex flex-row justify-end">
+                <div className="flex flex-row justify-end mt-6">
                   <button
-                    className="btn btn-md bg-emerald-900 text-[#FFD700] rounded-md font-medium"
+                    className="bg-emerald-900 text-[#FFD700] font-bold py-2 px-6 rounded-full shadow-lg hover:bg-emerald-800 hover:text-yellow-300 transition"
                     onClick={generatePDF}
                   >
                     Download PDF
@@ -1719,24 +1761,27 @@ function CombinedSearch() {
 
             {/* Common Modal */}
             {isModalOpen && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                <div className="bg-white w-11/12 max-w-lg rounded-md shadow-lg p-6 relative">
+              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                <div className="bg-white w-11/12 max-w-md rounded-2xl shadow-2xl p-8 relative border-2 border-[#FFD700]">
                   <button
                     onClick={closeModal}
-                    className="absolute top-4 right-4 text-emerald-900 font-bold text-xl"
+                    className="absolute top-4 right-4 text-emerald-900 font-bold text-2xl hover:text-yellow-500 transition"
+                    aria-label="Close modal"
                   >
                     ✕
                   </button>
-                  <h2 className="text-emerald-900 font-bold text-2xl mb-4">
+                  <h2 className="text-emerald-900 font-extrabold text-2xl mb-4 text-center">
                     Missing Information
                   </h2>
-                  <p className="text-lg text-red-500">{uploadMessage}</p>
-                  <button
-                    onClick={closeModal}
-                    className="mt-4 px-4 py-2 bg-emerald-900 text-[#FFD700] rounded-md"
-                  >
-                    Close
-                  </button>
+                  <p className="text-lg text-red-500 text-center font-semibold mb-4">{uploadMessage}</p>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={closeModal}
+                      className="bg-emerald-900 text-[#FFD700] font-bold py-2 px-6 rounded-full shadow hover:bg-emerald-800 hover:text-yellow-300 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
