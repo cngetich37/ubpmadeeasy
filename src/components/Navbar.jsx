@@ -98,6 +98,10 @@ const Navbar = () => {
             <ThemeSwitcher />
           </li>
         </ul>
+        {/* Mobile Theme Switcher */}
+        <div className="flex md:hidden items-center">
+          <ThemeSwitcher />
+        </div>
       </nav>
 
       {/* Sidebar Drawer with Overlay */}
@@ -167,6 +171,9 @@ const Navbar = () => {
                   </Link>
                 </li>
               ))}
+              <li className="flex md:hidden justify-end mt-6 pr-2">
+                <ThemeSwitcher />
+              </li>
             </ul>
             <div className="flex-1" />
             {/* Optional: Add a footer or social links here */}
