@@ -3,25 +3,25 @@ import React from "react";
 const Footer = () => {
   return (
     <footer
-      className="bg-white border-t-4 border-t-[#FFD700] text-emerald-900 font-medium px-4 py-8 md:py-10 mt-8 shadow-inner"
+      className="bg-white border-t-4 border-t-[#FFD700] text-emerald-900 font-medium px-2 py-2 md:py-0 shadow-inner"
       role="contentinfo"
       aria-label="Footer section"
     >
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between items-center gap-8">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4 text-xs md:text-sm">
         {/* Logo and Brand */}
-        <div className="flex flex-col items-center md:items-start gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <img
             src="/logo.svg"
             alt="UBPMadeEasy Logo"
-            className="w-16 h-16 mb-1 drop-shadow-md hover:scale-105 transition-transform duration-200"
+            className="w-8 h-8 md:w-10 md:h-10 drop-shadow-md mt-1 rounded-full"
             loading="lazy"
           />
-          <span className="text-lg font-bold tracking-wide text-emerald-900">UBPMadeEasy</span>
-          <span className="text-sm text-emerald-800 italic">Empowering Your Business Journey, One Permit at a Time!</span>
+          <span className="font-bold tracking-wide text-emerald-900 whitespace-nowrap">UBPMadeEasy</span>
+          <span className="text-emerald-800 italic truncate max-w-[160px] md:max-w-xs ml-2">UBP, The Easy Way.</span>
         </div>
 
         {/* Quick Links */}
-        <nav className="flex flex-col md:flex-row gap-4 md:gap-8 text-center md:text-left mt-6 md:mt-0" aria-label="Footer navigation">
+        <nav className="flex gap-2 md:gap-4 text-center" aria-label="Footer navigation">
           <a href="/" className="hover:text-[#FFD700] transition-colors duration-200">Home</a>
           <a href="/guide" className="hover:text-[#FFD700] transition-colors duration-200">Guide</a>
           <a href="/faqs" className="hover:text-[#FFD700] transition-colors duration-200">FAQs</a>
@@ -29,9 +29,7 @@ const Footer = () => {
         </nav>
 
         {/* Copyright */}
-        <div className="flex flex-col items-center md:items-end gap-2">
-          <span className="text-xs text-gray-500">&copy; {new Date().getFullYear()} UBPMadeEasy. All rights reserved.</span>
-        </div>
+        <span className="text-gray-500 whitespace-nowrap">&copy; {new Date().getFullYear()} UBPMadeEasy. All rights reserved.</span>
       </div>
     </footer>
   );
