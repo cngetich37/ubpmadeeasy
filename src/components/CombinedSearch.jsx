@@ -985,8 +985,8 @@ function CombinedSearch() {
       ["First 3m²", pdfData.firstThreeMetres],
       ["First 10m²", pdfData.firstTenSquareMetres],
       ["Each Extra m²", pdfData.extraSquareMetres],
-      ["Licence Fee (Renewal, Total for Sides)", pdfData.licenceFee],
-      ["Licence Fee (New Applicant, Total for Sides)", pdfData.licenceFeeN],
+      ["Licence Fee (Renewal)", pdfData.licenceFee],
+      ["Licence Fee (New Applicant)", pdfData.licenceFeeN],
     ];
     // Filter out rows where value is 'N/A' or empty string
     tableRows = tableRows.filter(row => row[1] !== 'N/A' && row[1] !== '' && row[1] !== undefined);
