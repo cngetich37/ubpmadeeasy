@@ -550,7 +550,10 @@ const UBPAgent = () => {
           let advertRows = [
             ["Advert", advertResult.foundAdvertType],
             ["Category", advertResult.advertisementCategory],
-            ["Dimensions", `${advertResult.length}m x ${advertResult.width}m`],
+            // Only show dimensions if not default 1m x 1m
+            ...((advertResult.length !== 1 || advertResult.width !== 1)
+              ? [["Dimensions", `${advertResult.length}m x ${advertResult.width}m`]]
+              : []),
             ...(sideAdvertTypes.includes(advertResult.foundAdvertType)
               ? [["Number of Sides", advertResult.numberOfSides]]
               : []),
@@ -596,7 +599,10 @@ const UBPAgent = () => {
             ["Advertisement Category", advertResult.advertisementCategory],
             ["Advert", advertResult.foundAdvertType],
             ["Application Fee (New Applicant)", advertResult.applicationFee],
-            ["Dimensions (Length × Width)", `${advertResult.length} m × ${advertResult.width} m`],
+            // Only show dimensions if not default 1m x 1m
+            ...((advertResult.length !== 1 || advertResult.width !== 1)
+              ? [["Dimensions (Length × Width)", `${advertResult.length} m × ${advertResult.width} m`]]
+              : []),
             // Always show number of sides for side-based types
             ...(sideAdvertTypes.includes(advertResult.foundAdvertType)
               ? [["Number of Sides", advertResult.numberOfSides]]
