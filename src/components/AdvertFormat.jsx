@@ -70,46 +70,62 @@ const AdvertFormat = () => {
         <meta name="author" content="Collins Ngetich" />
       </Helmet>
 
-      <section className="bg-white w-full md:w-3/4 lg:w-2/3 p-6 rounded-xl shadow-lg min-h-screen">
-        <header>
-          <h1 className="text-3xl font-bold text-emerald-900 mb-4 text-center">
+      <section className="bg-white/90 w-full max-w-5xl p-8 rounded-3xl shadow-2xl min-h-[80vh] flex flex-col items-center relative">
+        <header className="w-full flex flex-col items-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-emerald-900 mb-2 tracking-tight text-center drop-shadow-lg">
             Advert (Small Formats)
           </h1>
+          <span className="text-lg text-emerald-800 font-medium mb-2 text-center">Discover, search, and explore various advert types</span>
+          <div className="w-24 h-1 bg-[#FFD700] rounded-full mb-2" />
         </header>
 
-        <div className="mb-4">
+        {/* Search Bar */}
+        <div className="mb-8 w-full max-w-md relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-900 text-xl pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+            </svg>
+          </span>
           <input
             id="search"
             type="text"
             placeholder="Search advert type..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full px-4 py-2 border border-[#111827] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFD700]"
+            className="w-full pl-12 pr-4 py-3 border-2 border-emerald-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFD700] bg-white text-emerald-900 text-lg shadow-sm transition-all duration-200"
+            autoComplete="off"
           />
         </div>
 
-        <div ref={contentRef} className="overflow-y-auto max-h-[75vh]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {/* Adverts Grid */}
+        <div ref={contentRef} className="overflow-y-auto w-full px-1 max-h-[65vh]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {filteredData.length > 0 ? (
               filteredData.map((item) => (
                 <figure
                   key={item.id}
-                  className="relative bg-gray-100 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition duration-300"
+                  className="relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 border border-emerald-100 group flex flex-col h-full"
                 >
-                  <img
-                    src={item.imageUrl}
-                    alt={item.imageDescription || "Advert Image"}
-                    className="w-full h-48 object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
-                  />
-                  <figcaption className="absolute bottom-0 left-0 w-full bg-[#FFD700] bg-opacity-80 text-emerald-900 p-2 text-center font-semibold truncate">
+                  <div className="relative w-full h-52 overflow-hidden">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.imageDescription || 'Advert Image'}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 group-hover:brightness-90"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#FFD700]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+                  <figcaption className="flex-1 flex items-center justify-center px-4 py-3 bg-[#FFD700]/90 text-emerald-900 font-semibold text-center text-base md:text-lg rounded-b-2xl shadow-inner truncate">
                     {item.imageDescription}
                   </figcaption>
                 </figure>
               ))
             ) : (
-              <p className="text-center text-gray-500">
-                No matching adverts found.
-              </p>
+              <div className="col-span-full flex flex-col items-center justify-center py-12">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#FFD700" className="w-16 h-16 mb-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25m0 0A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25v3.75m7.5 0h-7.5m7.5 0v7.5A2.25 2.25 0 0113.5 19.5h-3A2.25 2.25 0 018.25 17.25v-7.5" />
+                </svg>
+                <p className="text-center text-emerald-900 text-lg font-medium">No matching adverts found.</p>
+              </div>
             )}
           </div>
         </div>
