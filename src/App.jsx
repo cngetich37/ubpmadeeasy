@@ -7,11 +7,11 @@ import UBPHome from "./components/UBPHome";
 import AdvertFormat from "./components/AdvertFormat";
 import Guide from "./components/Guide";
 import FAQS from "./components/FAQs";
-import ApplicationProcess from "./components/ApplicationProcess";
 import TermsAndConditions from "./components/TermsAndConditions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CombinedSearch from "./components/CombinedSearch";
 import UBPAgent from "./components/UBPAgent";
+import UBPTutorial from "./components/UBPTutorial";
 
 const exceptionLinks = [
   "https://nairobi.go.ke/download/the-nairobi-city-county-finance-act2023/",
@@ -50,8 +50,8 @@ const App = () => {
           <Route path="/ubp" element={<CombinedSearch />} />
           <Route path="/advert" element={<AdvertFormat />} />
           <Route path="/guide" element={<Guide />} />
-          <Route path="/app" element={<ApplicationProcess />} />
           <Route path="/agent" element={<UBPAgent/>}/>
+          <Route path="/tutorial" element={<UBPTutorial/>}/>
         </Route>
 
         {/* Redirect unknown routes, allowing exceptions */}
