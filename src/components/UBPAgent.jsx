@@ -3,6 +3,9 @@ import { motion } from "framer-motion";
 import { FiSend, FiMic, FiPlus, FiTrash, FiMenu } from "react-icons/fi";
 import { GiSpeaker } from "react-icons/gi";
 import { Helmet } from "react-helmet";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import QRCode from "qrcode";
 
 // Helper function to normalize words (e.g., "watches" -> "watch")
 const normalizeWord = (word) => {
@@ -132,6 +135,15 @@ const UBPAgent = () => {
     JSON.parse(localStorage.getItem("ubpai_businessData")) || []
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // For mobile sidebar toggle
+  const [pdfUrl, setPdfUrl] = useState(null);
+
+  // Fetch advert types once (on mount)
+  const [advertTypes, setAdvertTypes] = useState([]);
+  useEffect(() => {
+    fetch('https://effortlessubp-backend.onrender.com/api/advert')
+      .then(res => res.json())
+      .then(data => setAdvertTypes(data.map(item => item.advertType)));
+  }, []);
 
   const chatContainerRef = useRef(null);
 
@@ -183,215 +195,643 @@ const UBPAgent = () => {
   const handleSendPrompt = async (inputPrompt = prompt) => {
     if (!inputPrompt.trim()) return;
 
-    // Add user message to the current session
-    setSessions((prev) => ({
-      ...prev,
-      [currentSession]: [
-        ...(prev[currentSession] || []),
-        { role: "user", text: inputPrompt },
-      ],
-    }));
-
-    // Step 1: Match business activity
-    const bestMatch = businessData.find((item) =>
-      normalizeWord(inputPrompt.toLowerCase()).includes(
-        normalizeWord(item.commonBusinessActivity.toLowerCase())
-      )
-    );
-
-    if (!bestMatch) {
-      const errorMessage =
-        "I am sorry, I didn't understand you.";
+    try {
       setSessions((prev) => ({
         ...prev,
         [currentSession]: [
           ...(prev[currentSession] || []),
-          { role: "assistant", text: errorMessage },
+          { role: "user", text: inputPrompt },
         ],
       }));
-      return;
-    }
 
-    try {
-      const response = await fetch(
-        `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${bestMatch.businessActivity}`
-      );
-      const businessDetails = await response.json();
+      // Detect if prompt contains both business and advert info
+      const businessKeywords = [
+        "business", "mpesa", "shop", "outlet", "employee", "butchery", "barbershop", "betting", "kinyozi"
+      ];
+      const advertKeywords = [
+        "advert", "billboard", "canopy", "sign", "banner", "painting", "branding", "flag", "window", "wall"
+      ];
+      const hasBusiness = businessKeywords.some((kw) => inputPrompt.toLowerCase().includes(kw));
+      const hasAdvert = advertKeywords.some((kw) => inputPrompt.toLowerCase().includes(kw));
 
-      if (!businessDetails.financeActs) {
-        throw new Error("Invalid business details response");
-      }
+      let businessResult = null;
+      let advertResult = null;
+      let errorMessage = null;
 
-      // Step 2: Extract numbers (outlets/employees)
-      const requestedNumbers = extractNumbers(inputPrompt);
-
-      // Extract size-based classification (e.g., "1000 sq.m" or "500m²")
-      const sizeMatch = inputPrompt.match(
-        /(\d+)\s*(sq\.?m|square meters?|m²)/i
-      );
-      const requestedSize = sizeMatch ? parseInt(sizeMatch[1]) : null;
-
+      // 1. Business logic (original logic)
       let selectedCategory = null;
+      let bestMatch = null;
+      let businessDetails = null;
+      let requestedNumbers = [];
+      let requestedSize = null;
+      let labelText = "";
+      let filterValue = "";
+      let industryMessage = "";
+      let businessCategoryMessage = "";
+      let businessSubCategoryMessage = "";
+      let businessActivityMessage = "";
 
-      if (requestedNumbers.length > 0) {
-        selectedCategory = businessDetails.financeActs.find((item) => {
-          const numbersInDescription =
-            item.businessDescription.match(/\d+/g)?.map(Number) || [];
+      if (hasBusiness) {
+        bestMatch = businessData.find((item) =>
+          normalizeWord(inputPrompt.toLowerCase()).includes(
+            normalizeWord(item.commonBusinessActivity.toLowerCase())
+          )
+        );
+        if (bestMatch) {
+          try {
+            const response = await fetch(
+              `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${bestMatch.businessActivity}`
+            );
+            businessDetails = await response.json();
 
-          return requestedNumbers.some((num) => {
-            if (numbersInDescription.length === 2) {
-              return (
-                num >= numbersInDescription[0] && num <= numbersInDescription[1]
-              ); // Matches "X-Y range"
-            } else if (numbersInDescription.length === 1) {
-              return num > numbersInDescription[0]; // Matches "over X"
-            }
-            return false;
-          });
-        });
+            // Fetch the message/description for each field
+            const [industryMsg, businessCategoryMsg, businessSubCategoryMsg, businessActivityMsg] = await Promise.all([
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/industry/${bestMatch.industry}`).then(res => res.json()).then(data => data.industry),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesscategories/${bestMatch.businessCategory}`).then(res => res.json()).then(data => data.businessCategory),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesssubcategories/${bestMatch.businessSubCategory}`).then(res => res.json()).then(data => data.businessSubCategory),
+              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${bestMatch.businessActivity}`).then(res => res.json()).then(data => data.businessActivity),
+            ]);
+            industryMessage = industryMsg;
+            businessCategoryMessage = businessCategoryMsg;
+            businessSubCategoryMessage = businessSubCategoryMsg;
+            businessActivityMessage = businessActivityMsg;
 
-        // Handle specific cases like "up to X", "less than X", "over X"
-        if (!selectedCategory) {
-          selectedCategory = businessDetails.financeActs.find((item) => {
-            const desc = item.businessDescription.toLowerCase();
-
-            if (/up to|upto/.test(desc)) {
-              const match = item.businessDescription.match(
-                /\b(up to|upto)\s+(\d+)/i
-              );
-              if (match)
-                return requestedNumbers.some(
-                  (num) => num <= parseInt(match[2], 10)
-                );
-            }
-
-            if (/less than/.test(desc)) {
-              const match = item.businessDescription.match(
-                /\bless\s+than\s+(\d+)/i
-              );
-              if (match)
-                return requestedNumbers.some(
-                  (num) => num < parseInt(match[1], 10)
-                );
-            }
-
-            if (/over/.test(desc)) {
-              const match = item.businessDescription.match(/\bover\s+(\d+)/i);
-              if (match)
-                return requestedNumbers.some(
-                  (num) => num > parseInt(match[1], 10)
-                );
-            }
-
-            return false;
-          });
-        }
-      }
-
-      if (requestedSize) {
-        if (!selectedCategory) {
-          selectedCategory = businessDetails.financeActs.find((item) => {
-            const desc = item.businessDescription.toLowerCase();
-
-            if (/up to|upto/.test(desc)) {
-              const match = item.businessDescription.match(
-                /\b(up to|upto)\s+(\d+)/i
-              );
-              if (match) return requestedSize <= parseInt(match[2], 10);
-            }
-
-            if (/less than/.test(desc)) {
-              const match = item.businessDescription.match(
-                /\bless\s+than\s+(\d+)/i
-              );
-              if (match) return requestedSize < parseInt(match[1], 10);
-            }
-
-            if (/\b(\d+)\s*-\s*(\d+)/.test(item.businessDescription)) {
-              const match =
-                item.businessDescription.match(/\b(\d+)\s*-\s*(\d+)/);
-              if (match) {
-                const minSize = parseInt(match[1]);
-                const maxSize = parseInt(match[2]);
-                return requestedSize >= minSize && requestedSize <= maxSize;
+            // Step 2: Extract numbers (outlets/employees)
+            requestedNumbers = extractNumbers(inputPrompt);
+            // Extract size-based classification (e.g., "1000 sq.m" or "500m²")
+            const sizeMatch = inputPrompt.match(/(\d+)\s*(sq\.?m|square meters?|m²)/i);
+            requestedSize = sizeMatch ? parseInt(sizeMatch[1]) : null;
+            // Find category
+            if (requestedNumbers.length > 0) {
+              selectedCategory = businessDetails.financeActs.find((item) => {
+                const numbersInDescription =
+                  item.businessDescription.match(/\d+/g)?.map(Number) || [];
+                return requestedNumbers.some((num) => {
+                  if (numbersInDescription.length === 2) {
+                    return (
+                      num >= numbersInDescription[0] && num <= numbersInDescription[1]
+                    ); // Matches "X-Y range"
+                  } else if (numbersInDescription.length === 1) {
+                    return num > numbersInDescription[0]; // Matches "over X"
+                  }
+                  return false;
+                });
+              });
+              // Handle specific cases like "up to X", "less than X", "over X"
+              if (!selectedCategory) {
+                selectedCategory = businessDetails.financeActs.find((item) => {
+                  const desc = item.businessDescription.toLowerCase();
+                  if (/up to|upto/.test(desc)) {
+                    const match = item.businessDescription.match(/\b(up to|upto)\s+(\d+)/i);
+                    if (match)
+                      return requestedNumbers.some(
+                        (num) => num <= parseInt(match[2], 10)
+                      );
+                  }
+                  if (/less than/.test(desc)) {
+                    const match = item.businessDescription.match(/\bless\s+than\s+(\d+)/i);
+                    if (match)
+                      return requestedNumbers.some(
+                        (num) => num < parseInt(match[1], 10)
+                      );
+                  }
+                  if (/over/.test(desc)) {
+                    const match = item.businessDescription.match(/\bover\s+(\d+)/i);
+                    if (match)
+                      return requestedNumbers.some(
+                        (num) => num > parseInt(match[1], 10)
+                      );
+                  }
+                  return false;
+                });
               }
             }
-
-            if (/over/.test(desc)) {
-              const match = item.businessDescription.match(/\bover\s+(\d+)/);
-              if (match) return requestedSize > parseInt(match[1], 10);
+            if (requestedSize) {
+              if (!selectedCategory) {
+                selectedCategory = businessDetails.financeActs.find((item) => {
+                  const desc = item.businessDescription.toLowerCase();
+                  if (/up to|upto/.test(desc)) {
+                    const match = item.businessDescription.match(/\b(up to|upto)\s+(\d+)/i);
+                    if (match) return requestedSize <= parseInt(match[2], 10);
+                  }
+                  if (/less than/.test(desc)) {
+                    const match = item.businessDescription.match(/\bless\s+than\s+(\d+)/i);
+                    if (match) return requestedSize < parseInt(match[1], 10);
+                  }
+                  if (/\b(\d+)\s*-\s*(\d+)/.test(item.businessDescription)) {
+                    const match = item.businessDescription.match(/\b(\d+)\s*-\s*(\d+)/);
+                    if (match) {
+                      const minSize = parseInt(match[1]);
+                      const maxSize = parseInt(match[2]);
+                      return requestedSize >= minSize && requestedSize <= maxSize;
+                    }
+                  }
+                  if (/over/.test(desc)) {
+                    const match = item.businessDescription.match(/\bover\s+(\d+)/);
+                    if (match) return requestedSize > parseInt(match[1], 10);
+                  }
+                  return false;
+                });
+              }
             }
-
-            return false;
-          });
+            // Fallback to generic category if no exact match
+            if (!selectedCategory && businessDetails.financeActs.length > 0) {
+              selectedCategory =
+                businessDetails.financeActs.find(
+                  (item) => !/\d+/.test(item.businessDescription)
+                ) || businessDetails.financeActs[0];
+            }
+            // Label for PDF
+            if (selectedCategory && selectedCategory.businessDescription) {
+              const match = selectedCategory.businessDescription.match(/(?:over\s*)?(\d+)(?:\s*[-–—]\s*\d+)?\s+([\w]+)/i);
+              labelText = match ? `No of ${match[2]}` : "";
+              filterValue = requestedNumbers[0] || requestedSize || "";
+            }
+            businessResult = { bestMatch, businessDetails, selectedCategory, labelText, filterValue, industryMessage, businessCategoryMessage, businessSubCategoryMessage, businessActivityMessage };
+          } catch (e) {
+            console.error(e);
+            errorMessage = "Could not fetch business details.";
+          }
+        } else {
+          errorMessage = "I could not find a matching business activity.";
         }
       }
 
-      // Fallback to generic category if no exact match
-      if (!selectedCategory && businessDetails.financeActs.length > 0) {
-        selectedCategory =
-          businessDetails.financeActs.find(
-            (item) => !/\d+/.test(item.businessDescription)
-          ) || businessDetails.financeActs[0];
-      }
-
-      let responseText = "";
-
-      if (selectedCategory) {
-        // Convert charges to numbers, treating "-" as 0
-        const parseCharge = (value) => (value === "-" ? 0 : Number(value));
-
-        const tradeLicence = parseCharge(selectedCategory.tradeLicence);
-        const fireClearance = parseCharge(selectedCategory.fireClearance);
-        const foodHygiene = parseCharge(selectedCategory.foodHygiene);
-        const healthCertificate = parseCharge(
-          selectedCategory.healthCertificate
+      // 2. Advert logic (from CombinedSearch, summary only)
+      if (hasAdvert) {
+        let foundAdvertType = advertTypes.find(type =>
+          new RegExp(`\\b${type.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(inputPrompt)
         );
-        const pestControl = parseCharge(selectedCategory.pestControl);
-
-        const totalCharges =
-          tradeLicence +
-          fireClearance +
-          foodHygiene +
-          healthCertificate +
-          pestControl;
-
-        responseText = `This is the business activity information for ${bestMatch.commonBusinessActivity}:\n\n`;
-        responseText += `Industry: ${bestMatch.industry}\n`;
-        responseText += `Business Category: ${bestMatch.businessCategory}\n`;
-        responseText += `Business Subcategory: ${bestMatch.businessSubCategory}\n`;
-        responseText += `Business Activity: ${bestMatch.businessActivity}\n`;
-        responseText += `For a ${selectedCategory.businessDescription}, the charges are:\n\n`;
-        responseText += `Trade License:  ${tradeLicence}\n`;
-        responseText += `Fire Clearance:  ${fireClearance}\n`;
-        responseText += `Food Hygiene:  ${foodHygiene}\n`;
-        responseText += `Health Certificate:  ${healthCertificate}\n`;
-        responseText += `Pest Control:  ${pestControl}\n\n`;
-        responseText += `Total Charges:  ${totalCharges}\n\n`;
-      } else {
-        responseText = `I found the business "${bestMatch.commonBusinessActivity}", but I couldn't find specific charges based on your criteria.`;
+        if (!foundAdvertType) {
+          // Try partial match
+          foundAdvertType = advertTypes.find((type) => {
+            return type.toLowerCase().split(" ").some(word => inputPrompt.toLowerCase().includes(word));
+          });
+        }
+        if (foundAdvertType) {
+          // Extract dimensions (e.g., "1 metre by 2 metres")
+          let length = 1, width = 1;
+          const dimMatch = inputPrompt.match(/(\d+(?:\.\d+)?)\s*(metre|meter|m)\s*(by|x|\*)\s*(\d+(?:\.\d+)?)\s*(metre|meter|m)/i);
+          if (dimMatch) {
+            length = parseFloat(dimMatch[1]);
+            width = parseFloat(dimMatch[4]);
+          }
+          let numberOfSides = 1;
+          const sideAdvertTypes = [
+            "Above Canopy", "Under Canopy", "Directional Signs", "Billboard", "Call In Adverts"
+          ];
+          // Try to extract number of sides from prompt (e.g. "2 sides")
+          const sidesMatch = inputPrompt.match(/(\d+)\s*sides?/i);
+          if (sidesMatch) {
+            numberOfSides = parseInt(sidesMatch[1]);
+          }
+          try {
+            const response = await fetch(
+              `https://effortlessubp-backend.onrender.com/api/advert/${encodeURIComponent(foundAdvertType)}`
+            );
+            const advertDetails = await response.json();
+            // Compute all fees as in CombinedSearch
+            const applicationFee = Number(advertDetails.applicationFee) || 0;
+            const firstThreeMetres = Number(advertDetails.firstThreeMetres) || 0;
+            const firstSquareMetres = Number(advertDetails.firstSquareMetres) || 0;
+            const firstTenSquareMetres = Number(advertDetails.firstTenSquareMetres) || 0;
+            const extraSquareMetres = Number(advertDetails.extraSquareMetres) || 0;
+            const perEachperYear = Number(advertDetails.perEachperYear) || 0;
+            let renewalFee = 0;
+            let newApplicantFee = 0;
+            const advertDimension = length * width;
+            if (foundAdvertType === "Directional Signs") {
+              renewalFee = 10500;
+              newApplicantFee = 10500;
+            } else if (foundAdvertType === "Billboard") {
+              if (advertDimension < 3) {
+                renewalFee = 0;
+                newApplicantFee = 0;
+              } else if (advertDimension > 3) {
+                renewalFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+                newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+              } else {
+                renewalFee = firstThreeMetres;
+                newApplicantFee = firstThreeMetres;
+              }
+            } else if (foundAdvertType === "Corporate Flags") {
+              renewalFee = perEachperYear;
+              newApplicantFee = perEachperYear;
+            } else if (foundAdvertType === "Canvas") {
+              renewalFee = firstSquareMetres;
+              newApplicantFee = firstSquareMetres;
+            } else if (foundAdvertType === "Business Encroachment") {
+              if (advertDimension === 1) {
+                renewalFee = firstSquareMetres;
+                newApplicantFee = firstSquareMetres;
+              } else {
+                renewalFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+                newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+              }
+            } else if (foundAdvertType === "Call In Adverts") {
+              renewalFee = 18200;
+              newApplicantFee = 18200;
+            } else if (
+              foundAdvertType === "Wallpainting" ||
+              foundAdvertType === "Window Branding" ||
+              foundAdvertType === "Wall Branding"
+            ) {
+              if (advertDimension < 10) {
+                renewalFee = 0;
+                newApplicantFee = 0;
+              } else if (advertDimension === 10) {
+                renewalFee = firstTenSquareMetres;
+                newApplicantFee = firstTenSquareMetres;
+              } else {
+                renewalFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+                newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+              }
+            } else {
+              if (advertDimension === 1) {
+                renewalFee = firstSquareMetres;
+                newApplicantFee = firstSquareMetres;
+              } else if (advertDimension > 1) {
+                renewalFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+                newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+              }
+            }
+            // Add application fee to new applicant fee
+            newApplicantFee += applicationFee;
+            // Multiply by number of sides if needed
+            if (sideAdvertTypes.includes(foundAdvertType)) {
+              renewalFee = (parseFloat(renewalFee) || 0) * (numberOfSides || 1);
+              newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
+            }
+            // Format for display
+            const formatCurrency = (amount) =>
+              amount !== 0
+                ? parseFloat(amount).toLocaleString("en-KE", {
+                    style: "currency",
+                    currency: "KES",
+                    minimumFractionDigits: 2,
+                  })
+                : "";
+            advertResult = {
+              foundAdvertType,
+              advertDetails,
+              length,
+              width,
+              numberOfSides,
+              applicationFee: formatCurrency(applicationFee),
+              advertisementCategory: advertDetails.advertisementCategory || "N/A",
+              firstSquareMetres: formatCurrency(firstSquareMetres) || "N/A",
+              extraSquareMetres: formatCurrency(extraSquareMetres) || "N/A",
+              firstThreeMetres: formatCurrency(firstThreeMetres) || "N/A",
+              firstTenSquareMetres: formatCurrency(firstTenSquareMetres) || "N/A",
+              licenceFee: formatCurrency(renewalFee) || "N/A",
+              licenceFeeN: formatCurrency(newApplicantFee) || "N/A",
+            };
+          } catch (e) {
+            console.error(e);
+            errorMessage = "Could not fetch advert details.";
+          }
+        } else {
+          errorMessage = "I could not find a matching advert type.";
+        }
       }
 
-      // Step 3: Add assistant response to chat UI
-      simulateTyping(responseText, () => {
-        setSessions((prev) => ({
-          ...prev,
-          [currentSession]: [
-            ...(prev[currentSession] || []),
-            { role: "assistant", text: responseText },
-          ],
-        }));
-        handleReadText(responseText);
-      });
-    } catch (error) {
-      console.error("Error fetching business charges:", error);
-      const errorMessage =
-        "There was an issue retrieving the requested information. Please try again later.";
+      // 3. Compose response and PDF
+      if (businessResult || advertResult) {
+        let responseText = "";
+        if (businessResult) {
+          const { bestMatch, selectedCategory } = businessResult;
+          responseText += `Business: ${bestMatch.commonBusinessActivity}\n`;
+          responseText += `Industry: ${bestMatch.industry}\n`;
+          responseText += `Business Category: ${bestMatch.businessCategory}\n`;
+          responseText += `Business Subcategory: ${bestMatch.businessSubCategory}\n`;
+          responseText += `Business Activity: ${bestMatch.businessActivity}\n`;
+          if (selectedCategory) {
+            responseText += `For a ${selectedCategory.businessDescription}, the charges are:\n`;
+            responseText += `Trade License: ${selectedCategory.tradeLicence}, Fire Clearance: ${selectedCategory.fireClearance}, Food Hygiene: ${selectedCategory.foodHygiene}, Health Certificate: ${selectedCategory.healthCertificate}, Pest Control: ${selectedCategory.pestControl}\n`;
+          }
+          responseText += `\n`;
+        }
+        if (advertResult) {
+          // For advert, replace 'Kenya shillings' with 'KES' in all currency fields
+          const replaceWithKES = (val) => String(val).replace(/Kenya shillings/gi, 'KES');
+          advertResult.applicationFee = replaceWithKES(advertResult.applicationFee);
+          advertResult.firstSquareMetres = replaceWithKES(advertResult.firstSquareMetres);
+          advertResult.extraSquareMetres = replaceWithKES(advertResult.extraSquareMetres);
+          advertResult.firstThreeMetres = replaceWithKES(advertResult.firstThreeMetres);
+          advertResult.firstTenSquareMetres = replaceWithKES(advertResult.firstTenSquareMetres);
+          advertResult.licenceFee = replaceWithKES(advertResult.licenceFee);
+          advertResult.licenceFeeN = replaceWithKES(advertResult.licenceFeeN);
+          responseText += `Advert: ${advertResult.foundAdvertType}\n`;
+          responseText += `Category: ${advertResult.advertisementCategory}\n`;
+          responseText += `Dimensions: ${advertResult.length}m x ${advertResult.width}m\n`;
+          if (advertResult.numberOfSides && advertResult.numberOfSides > 1) {
+            responseText += `Number of Sides: ${advertResult.numberOfSides}\n`;
+          }
+          responseText += `Application Fee: ${advertResult.applicationFee}\n`;
+          responseText += `First m²: ${advertResult.firstSquareMetres}\n`;
+          responseText += `First 3m²: ${advertResult.firstThreeMetres}\n`;
+          responseText += `First 10m²: ${advertResult.firstTenSquareMetres}\n`;
+          responseText += `Each Extra m²: ${advertResult.extraSquareMetres}\n`;
+          responseText += `Licence Fee (Renewal): ${advertResult.licenceFee}\n`;
+          responseText += `Licence Fee (New Applicant): ${advertResult.licenceFeeN}\n`;
+          responseText += `\n`;
+        }
+        responseText += `You can download a combined PDF with these details below.`;
+        // Replace KSH/KES with Kenya shillings in the responseText
+        responseText = responseText.replace(/KSH|KES/gi, 'KES');
+
+        // PDF generation logic
+        let pdf, currentY, pageWidth;
+        if (!businessResult && advertResult) {
+          // Only advert: use portrait, centered table, like CombinedSearch generatePDF
+          pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [300, 450] });
+          const topMargin = 50;
+          const leftMargin = 35;
+          const titleFontSize = 20;
+          const spacing = 5;
+          pdf.setFontSize(titleFontSize);
+          pdf.setFont("Times", "Roman");
+          pdf.setFillColor("#FFFFFF");
+          pdf.rect(0, 0, pdf.internal.pageSize.width, pdf.internal.pageSize.height, "F");
+          pdf.setTextColor("#064E3B");
+          pdf.text("UBPMadeEasy", leftMargin, topMargin);
+          currentY = topMargin + titleFontSize + spacing;
+          // Table
+          const tableHeaders = ["Advert", ""];
+          let tableRows = [
+            ["Advertisement Category", advertResult.advertisementCategory],
+            ["Advert", advertResult.foundAdvertType],
+            ["Application Fee (New Applicant)", advertResult.applicationFee],
+            ["Dimensions (Length × Width)", `${advertResult.length} m × ${advertResult.width} m`],
+            ...(advertResult.numberOfSides && advertResult.numberOfSides > 1 ? [["Number of Sides", advertResult.numberOfSides]] : []),
+            ["First m²", advertResult.firstSquareMetres],
+            ["First 3m²", advertResult.firstThreeMetres],
+            ["First 10m²", advertResult.firstTenSquareMetres],
+            ["Each Extra m²", advertResult.extraSquareMetres],
+            ["Licence Fee (Renewal)", advertResult.licenceFee],
+            ["Licence Fee (New Applicant)", advertResult.licenceFeeN],
+          ];
+          tableRows = tableRows.filter(row => row[1] !== 'N/A' && row[1] !== '' && row[1] !== undefined);
+          const columnWidths = [150, 120];
+          const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+          pageWidth = pdf.internal.pageSize.width;
+          const tableStartX = (pageWidth - tableWidth) / 2;
+          pdf.autoTable({
+            startY: currentY,
+            startX: tableStartX,
+            margin: { top: 10, right: 10, bottom: 40, left: 30 },
+            head: [tableHeaders],
+            body: tableRows,
+            theme: "striped",
+            styles: {
+              textColor: "#064E3B",
+              font: "Arial",
+              fontStyle: "normal",
+              fontSize: 10,
+            },
+            headStyles: {
+              fillColor: "#FFFFFF",
+              textColor: "#FFFFFF",
+              fontStyle: "bold",
+              fontSize: 12,
+            },
+            columnStyles: {
+              0: { cellWidth: 150 },
+              1: { cellWidth: 150 },
+            },
+          });
+          // QR code
+          const qrCodeURL = `https://ubpeasy.vercel.app/ubp?advert=${encodeURIComponent(advertResult.foundAdvertType)}`;
+          const qrCodeDataUrl = await QRCode.toDataURL(qrCodeURL, { width: 80 });
+          const qrCodeX = pdf.internal.pageSize.getWidth() - 100;
+          const qrCodeY = pdf.internal.pageSize.getHeight() - 100;
+          pdf.addImage(qrCodeDataUrl, "PNG", qrCodeX, qrCodeY, 80, 80);
+        } else {
+          // Business or both: use landscape, append advert summary after business section
+          pdf = new jsPDF("landscape", "pt", "a5");
+          pdf.setFillColor("#FFFFFF");
+          pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), "F");
+          const title = "UBPMadeEasy";
+          const titleX = pdf.internal.pageSize.getWidth() / 2;
+          const titleY = 50;
+          pageWidth = pdf.internal.pageSize.getWidth();
+          const rectHeight = 40;
+          pdf.setFillColor("#064E3B");
+          pdf.rect(0, titleY - rectHeight / 2, pageWidth, rectHeight, "F");
+          pdf.setTextColor("#FFD700");
+          pdf.setFont("Times", "bold");
+          pdf.text(title, titleX, titleY, { align: "center" });
+          pdf.setFontSize(40);
+          currentY = titleY + 50;
+          // Table 1: Business info
+          if (businessResult) {
+            const { bestMatch, industryMessage, businessCategoryMessage, businessSubCategoryMessage, businessActivityMessage } = businessResult;
+            const tableHeaders = ["", ""];
+            const tableRows = [
+              [`Business: ${bestMatch.commonBusinessActivity || bestMatch.searchInput || ''}`, ""],
+              ["", ""],
+              ["Industry", "Business Category"],
+              [
+                `${industryMessage} - ${bestMatch.industry}`,
+                `${businessCategoryMessage} - ${bestMatch.businessCategory}`,
+              ],
+              ["", ""],
+              ["Business Subcategory", "Business Activity"],
+              [
+                `${businessSubCategoryMessage} - ${bestMatch.businessSubCategory}`,
+                `${businessActivityMessage} - ${bestMatch.businessActivity}`,
+              ],
+            ];
+            pdf.autoTable({
+              startY: currentY,
+              margin: { top: 20, right: 10, bottom: 20, left: 5 },
+              head: [tableHeaders],
+              body: tableRows,
+              theme: "striped",
+              styles: {
+                textColor: "#064E3B",
+                font: "Times",
+                fontSize: 12,
+              },
+              headStyles: {
+                fillColor: "#FFFFFF",
+                textColor: "#064E3B",
+                fontStyle: "bold",
+                fontSize: 14,
+                halign: "center",
+              },
+              columnStyles: {
+                0: { cellWidth: 300 },
+                1: { cellWidth: 280 },
+              },
+              didDrawPage: (data) => {
+                currentY = data.cursor.y + 30;
+              },
+            });
+            // Details row if present
+            if (businessResult.labelText && businessResult.filterValue) {
+              const detailsTableWidth = 220;
+              const tableStartX = (pageWidth - detailsTableWidth) / 2;
+              pdf.autoTable({
+                startY: currentY,
+                startX: tableStartX,
+                margin: { top: 10, right: 10, bottom: 10, left: 5 },
+                head: [["Details", "Value"]],
+                body: [[
+                  { content: businessResult.labelText.replace(/:$/, ""), styles: { fontStyle: 'bold', halign: 'right', cellPadding: 4 } },
+                  { content: businessResult.filterValue, styles: { fontStyle: 'normal', halign: 'center', cellPadding: 4 } }
+                ]],
+                theme: "grid",
+                styles: {
+                  textColor: "#064E3B",
+                  font: "Times",
+                  fontSize: 13,
+                  valign: 'middle',
+                },
+                headStyles: {
+                  fillColor: "#FFD700",
+                  textColor: "#064E3B",
+                  fontStyle: "bold",
+                  fontSize: 13,
+                  halign: "center",
+                },
+                columnStyles: {
+                  0: { cellWidth: 110, halign: 'right' },
+                  1: { cellWidth: 110, halign: 'right' },
+                },
+                didDrawPage: (data) => {
+                  currentY = data.cursor.y + 20;
+                },
+              });
+              currentY += 20;
+            }
+            currentY += 10;
+            // Table 2: Charges
+            const tableHeadersFinance = [
+              "Code",
+              "Business Description",
+              "Trade Licence",
+              "Fire Clearance",
+              "Food Hygiene",
+              "Health Certificate",
+              "Pest Control",
+              "Total (KES)",
+            ];
+            const tableRowsFinance = businessDetails.financeActs.map((row) => {
+              const total =
+                (parseFloat(row.tradeLicence) || 0) +
+                (parseFloat(row.fireClearance) || 0) +
+                (parseFloat(row.foodHygiene) || 0) +
+                (parseFloat(row.healthCertificate) || 0) +
+                (parseFloat(row.pestControl) || 0);
+              // Replace KES with Kenya shillings in all currency fields
+              const formatCurrency = (val) => String(val).replace(/KES|KSH/gi, 'KES');
+              return [
+                row.subCategory,
+                row.businessDescription,
+                formatCurrency(row.tradeLicence),
+                formatCurrency(row.fireClearance),
+                formatCurrency(row.foodHygiene),
+                formatCurrency(row.healthCertificate),
+                formatCurrency(row.pestControl),
+                formatCurrency(total.toLocaleString("en-KE", {
+                  style: "currency",
+                  currency: "KES",
+                  minimumFractionDigits: 2,
+                })),
+              ];
+            });
+            pdf.autoTable({
+              startY: currentY,
+              margin: { top: 20, right: 10, bottom: 70, left: 5 },
+              head: [tableHeadersFinance],
+              body: tableRowsFinance,
+              theme: "striped",
+              styles: {
+                textColor: "#064E3B",
+                fillColor: "#FFFFFF",
+                font: "Arial",
+                fontSize: 10,
+              },
+              headStyles: {
+                fillColor: "#064E3B",
+                textColor: "#FFD700",
+                fontSize: 12,
+              },
+              columnStyles: {
+                0: { cellWidth: 40 },
+                1: { cellWidth: 120 },
+                2: { cellWidth: 60 },
+                3: { cellWidth: 70 },
+                4: { cellWidth: 70 },
+                5: { cellWidth: 70 },
+                6: { cellWidth: 60 },
+                7: { cellWidth: 90 },
+              },
+            });
+            currentY = pdf.lastAutoTable.finalY + 20;
+          }
+          // Append advert summary if present
+          if (advertResult) {
+            pdf.setFont("Times", "bold");
+            pdf.setFontSize(16);
+            pdf.setTextColor("#064E3B");
+            pdf.text("Advertisement Summary", 40, currentY);
+            currentY += 24;
+            pdf.setFont("Times", "normal");
+            pdf.setFontSize(12);
+            pdf.text(`Advert: ${advertResult.foundAdvertType}`, 40, currentY); currentY += 16;
+            pdf.text(`Category: ${advertResult.advertisementCategory}`, 40, currentY); currentY += 16;
+            pdf.text(`Dimensions: ${advertResult.length}m x ${advertResult.width}m`, 40, currentY); currentY += 16;
+            if (advertResult.numberOfSides && advertResult.numberOfSides > 1) {
+              pdf.text(`Number of Sides: ${advertResult.numberOfSides}`, 40, currentY); currentY += 16;
+            }
+            pdf.text(`Application Fee: ${advertResult.applicationFee}`, 40, currentY); currentY += 16;
+            pdf.text(`First m²: ${advertResult.firstSquareMetres}`, 40, currentY); currentY += 16;
+            pdf.text(`First 3m²: ${advertResult.firstThreeMetres}`, 40, currentY); currentY += 16;
+            pdf.text(`First 10m²: ${advertResult.firstTenSquareMetres}`, 40, currentY); currentY += 16;
+            pdf.text(`Each Extra m²: ${advertResult.extraSquareMetres}`, 40, currentY); currentY += 16;
+            pdf.text(`Licence Fee (Renewal): ${advertResult.licenceFee}`, 40, currentY); currentY += 16;
+            pdf.text(`Licence Fee (New Applicant): ${advertResult.licenceFeeN}`, 40, currentY); currentY += 20;
+          }
+          // QR code
+          const qrText = "https://ubpeasy.vercel.app/";
+          const qrCodeDataUrl = await QRCode.toDataURL(qrText, { width: 80 });
+          pdf.addImage(qrCodeDataUrl, "PNG", pageWidth - 100, pdf.internal.pageSize.getHeight() - 100, 80, 80);
+        }
+        // Output PDF as blob URL
+        const pdfBlob = pdf.output("blob");
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+
+        simulateTyping(responseText, () => {
+          setSessions((prev) => ({
+            ...prev,
+            [currentSession]: [
+              ...(prev[currentSession] || []),
+              { role: "assistant", text: responseText, pdf: url },
+            ],
+          }));
+          handleReadText(responseText);
+        });
+        return;
+      }
+
+      // If only error
       setSessions((prev) => ({
         ...prev,
         [currentSession]: [
           ...(prev[currentSession] || []),
-          { role: "assistant", text: errorMessage },
+          { role: "assistant", text: errorMessage || "I am sorry, I didn't understand you." },
+        ],
+      }));
+    } catch (e) {
+      console.error("Unexpected error in handleSendPrompt:", e);
+      setSessions((prev) => ({
+        ...prev,
+        [currentSession]: [
+          ...(prev[currentSession] || []),
+          { role: "assistant", text: "An unexpected error occurred. Please try again or check the console for details." },
         ],
       }));
     }
@@ -455,8 +895,10 @@ const UBPAgent = () => {
   // Handle reading text aloud
   const handleReadText = (text) => {
     if ("speechSynthesis" in window) {
-      // Modify the relevant parts of the response text
-      const modifiedText = text.replace(
+      // Replace all KSH/KES (case-insensitive) with 'Kenya shillings' for TTS
+      let modifiedText = text.replace(/KSH|KES/gi, 'Kenya shillings');
+      // Also handle the specific breakdowns for legacy support
+      modifiedText = modifiedText.replace(
         /(Trade License:.*?)(\d+)\n|(Fire Clearance:.*?)(\d+)\n|(Food Hygiene:.*?)(\d+)\n|(Health Certificate:.*?)(\d+)\n|(Pest Control:.*?)(\d+)\n|(Total Charges:.*?)(\d+)\n/g,
         (
           match,
@@ -473,13 +915,13 @@ const UBPAgent = () => {
           totalLabel,
           totalNum
         ) => {
-          if (tradeLabel) return `${tradeLabel}${tradeNum} Kenya Shillings\n`;
-          if (fireLabel) return `${fireLabel}${fireNum} Kenya Shillings\n`;
-          if (foodLabel) return `${foodLabel}${foodNum} Kenya Shillings\n`;
+          if (tradeLabel) return `${tradeLabel}${tradeNum} KES\n`;
+          if (fireLabel) return `${fireLabel}${fireNum} KES\n`;
+          if (foodLabel) return `${foodLabel}${foodNum} KES\n`;
           if (healthLabel)
-            return `${healthLabel}${healthNum} Kenya Shillings\n`;
-          if (pestLabel) return `${pestLabel}${pestNum} Kenya Shillings\n`;
-          if (totalLabel) return `${totalLabel}${totalNum} Kenya Shillings\n`;
+            return `${healthLabel}${healthNum} KES\n`;
+          if (pestLabel) return `${pestLabel}${pestNum} KES\n`;
+          if (totalLabel) return `${totalLabel}${totalNum} KES\n`;
           return match;
         }
       );
@@ -607,6 +1049,17 @@ const UBPAgent = () => {
                   }`}
                 >
                   {message.text}
+                  {message.pdf && (
+                    <div className="mt-2">
+                      <a
+                        href={message.pdf}
+                        download="UBP_Advert_Combined.pdf"
+                        className="inline-block bg-[#FFD700] text-emerald-900 px-3 py-1 rounded hover:bg-emerald-900 hover:text-[#FFD700] transition-colors font-semibold text-sm"
+                      >
+                        Download PDF
+                      </a>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

@@ -39,7 +39,7 @@ const Navbar = () => {
   const menuItems = [
     // { href: "/guide", icon: <FaListAlt />, label: "User Guide" },
     { href: "/app", icon: <FaListAlt />, label: "UBP Process" },
-    { href: "/ubp", icon: <LuSearch />, label: "Search UBP" },
+    { href: "/ubp", icon: <LuSearch />, label: "UBP/Advert" },
     { href: "/advert", icon: <LiaSignSolid />, label: "Advert Formats" },
     { href: "/agent", icon: <FaRobot />, label: "UBP Agent" },
     // { href: "/financeact", icon: <ImBooks />, label: "Finance Act" },

@@ -13,7 +13,7 @@ const SideBar = () => {
   const [key, setKey] = useState(0);
   const menuItems = [
     { href: "/guide", icon: <FiUser />, label: "User Guide" },
-    { href: "/ubp", icon: <LuSearch />, label: "Search UBP" },
+    { href: "/ubp", icon: <LuSearch />, label: "UBP/Advert" },
     { href: "/advert", icon: <LiaSignSolid />, label: "Advert Formats" },
     { href: "/advertsearch", icon: <MdImageSearch />, label: "Search Advert" },
     { href: "/app", icon: <BsFillQuestionSquareFill />, label: "UBP process" },
