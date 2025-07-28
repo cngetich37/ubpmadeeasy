@@ -610,53 +610,56 @@ function CombinedSearch() {
     setLicenceFee(renewalFee);
 
     // Calculate New Applicant Fee (licenceFeeN)
-    let newApplicantFee = 0;
-    if (advertSearchInput === "Directional Signs") {
-      newApplicantFee = 10500;
-    } else if (advertSearchInput === "Billboard") {
-      if (advertDimension < 3) {
-        newApplicantFee = 0;
-      } else if (advertDimension > 3) {
-        newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-      } else {
-        newApplicantFee = firstThreeMetres;
-      }
-    } else if (advertSearchInput === "Corporate Flags") {
-      newApplicantFee = perEachperYear;
-    } else if (advertSearchInput === "Canvas") {
-      newApplicantFee = firstSquareMetres;
-    } else if (advertSearchInput === "Business Encroachment") {
-      if (advertDimension === 1) {
-        newApplicantFee = firstSquareMetres;
-      } else {
-        newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-      }
-    } else if (advertSearchInput === "Call In Adverts") {
-      newApplicantFee = 18200;
-    } else if (
-      advertSearchInput === "Wallpainting" ||
-      advertSearchInput === "Window Branding" ||
-      advertSearchInput === "Wall Branding"
-    ) {
-      if (advertDimension < 10) {
-        newApplicantFee = 0;
-      } else if (advertDimension === 10) {
-        newApplicantFee = firstTenSquareMetres;
-      } else {
-        newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-      }
-    } else {
-      if (advertDimension === 1) {
-        newApplicantFee = firstSquareMetres;
-      } else if (advertDimension > 1) {
-        newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-      }
-    }
-    newApplicantFee += applicationFee;
-    if (sideAdvertTypes.includes(advertSearchInput)) {
-      newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
-    }
-    setLicenceFeeN(newApplicantFee);
+    // let newApplicantFee = 0;
+    // if (advertSearchInput === "Directional Signs") {
+    //   newApplicantFee = 10500;
+    // } else if (advertSearchInput === "Billboard") {
+    //   if (advertDimension < 3) {
+    //     newApplicantFee = 0;
+    //   } else if (advertDimension > 3) {
+    //     newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+    //   } else {
+    //     newApplicantFee = firstThreeMetres;
+    //   }
+    // } else if (advertSearchInput === "Corporate Flags") {
+    //   newApplicantFee = perEachperYear;
+    // } else if (advertSearchInput === "Canvas") {
+    //   newApplicantFee = firstSquareMetres;
+    // } else if (advertSearchInput === "Business Encroachment") {
+    //   if (advertDimension === 1) {
+    //     newApplicantFee = firstSquareMetres;
+    //   } else {
+    //     newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+    //   }
+    // } else if (advertSearchInput === "Call In Adverts") {
+    //   newApplicantFee = 18200;
+    // } else if (
+    //   advertSearchInput === "Wallpainting" ||
+    //   advertSearchInput === "Window Branding" ||
+    //   advertSearchInput === "Wall Branding"
+    // ) {
+    //   if (advertDimension < 10) {
+    //     newApplicantFee = 0;
+    //   } else if (advertDimension === 10) {
+    //     newApplicantFee = firstTenSquareMetres;
+    //   } else {
+    //     newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+    //   }
+    // } else {
+    //   if (advertDimension === 1) {
+    //     newApplicantFee = firstSquareMetres;
+    //   } else if (advertDimension > 1) {
+    //     newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+    //   }
+    // }
+    // newApplicantFee += applicationFee;
+    // if (sideAdvertTypes.includes(advertSearchInput)) {
+    //   newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
+    // }
+    // setLicenceFeeN(newApplicantFee);
+    // Calculate New Applicant Fee (licenceFeeN)
+  let newApplicantFee = renewalFee + (parseFloat(applicationFee) || 0);
+  setLicenceFeeN(newApplicantFee);
   }, [
     advertSearchInput,
     length,
