@@ -422,71 +422,129 @@ const UBPAgent = () => {
             const firstTenSquareMetres = Number(advertDetails.firstTenSquareMetres) || 0;
             const extraSquareMetres = Number(advertDetails.extraSquareMetres) || 0;
             const perEachperYear = Number(advertDetails.perEachperYear) || 0;
+            // let renewalFee = 0;
+            // let newApplicantFee = 0;
+            // const advertDimension = length * width;
+            // if (foundAdvertType === "Directional Signs") {
+            //   renewalFee = 10500;
+            //   newApplicantFee = 10500;
+            // } else if (foundAdvertType === "Billboard") {
+            //   if (advertDimension < 3) {
+            //     renewalFee = 0;
+            //     newApplicantFee = 0;
+            //   } else if (advertDimension > 3) {
+            //     renewalFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+            //     newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+            //   } else {
+            //     renewalFee = firstThreeMetres;
+            //     newApplicantFee = firstThreeMetres;
+            //   }
+            // } else if (foundAdvertType === "Corporate Flags") {
+            //   renewalFee = perEachperYear;
+            //   newApplicantFee = perEachperYear;
+            // } else if (foundAdvertType === "Canvas") {
+            //   renewalFee = firstSquareMetres;
+            //   newApplicantFee = firstSquareMetres;
+            // } else if (foundAdvertType === "Business Encroachment") {
+            //   if (advertDimension === 1) {
+            //     renewalFee = firstSquareMetres;
+            //     newApplicantFee = firstSquareMetres;
+            //   } else {
+            //     renewalFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+            //     newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+            //   }
+            // } else if (foundAdvertType === "Call In Adverts") {
+            //   renewalFee = 18200;
+            //   newApplicantFee = 18200;
+            // } else if (
+            //   foundAdvertType === "Wallpainting" ||
+            //   foundAdvertType === "Window Branding" ||
+            //   foundAdvertType === "Wall Branding"
+            // ) {
+            //   if (advertDimension < 10) {
+            //     renewalFee = 0;
+            //     newApplicantFee = 0;
+            //   } else if (advertDimension === 10) {
+            //     renewalFee = firstTenSquareMetres;
+            //     newApplicantFee = firstTenSquareMetres;
+            //   } else {
+            //     renewalFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+            //     newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+            //   }
+            // } else {
+            //   if (advertDimension === 1) {
+            //     renewalFee = firstSquareMetres;
+            //     newApplicantFee = firstSquareMetres;
+            //   } else if (advertDimension > 1) {
+            //     renewalFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+            //     newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+            //   }
+            // }
+            // // Add application fee to new applicant fee
+            // newApplicantFee += applicationFee;
+            // // Multiply by number of sides if needed
+            // if (sideAdvertTypes.includes(foundAdvertType)) {
+            //   renewalFee = (parseFloat(renewalFee) || 0) * (numberOfSides || 1);
+            //   newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
+            // }
             let renewalFee = 0;
-            let newApplicantFee = 0;
-            const advertDimension = length * width;
-            if (foundAdvertType === "Directional Signs") {
-              renewalFee = 10500;
-              newApplicantFee = 10500;
-            } else if (foundAdvertType === "Billboard") {
-              if (advertDimension < 3) {
-                renewalFee = 0;
-                newApplicantFee = 0;
-              } else if (advertDimension > 3) {
-                renewalFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-                newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-              } else {
-                renewalFee = firstThreeMetres;
-                newApplicantFee = firstThreeMetres;
-              }
-            } else if (foundAdvertType === "Corporate Flags") {
-              renewalFee = perEachperYear;
-              newApplicantFee = perEachperYear;
-            } else if (foundAdvertType === "Canvas") {
-              renewalFee = firstSquareMetres;
-              newApplicantFee = firstSquareMetres;
-            } else if (foundAdvertType === "Business Encroachment") {
-              if (advertDimension === 1) {
-                renewalFee = firstSquareMetres;
-                newApplicantFee = firstSquareMetres;
-              } else {
-                renewalFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-                newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-              }
-            } else if (foundAdvertType === "Call In Adverts") {
-              renewalFee = 18200;
-              newApplicantFee = 18200;
-            } else if (
-              foundAdvertType === "Wallpainting" ||
-              foundAdvertType === "Window Branding" ||
-              foundAdvertType === "Wall Branding"
-            ) {
-              if (advertDimension < 10) {
-                renewalFee = 0;
-                newApplicantFee = 0;
-              } else if (advertDimension === 10) {
-                renewalFee = firstTenSquareMetres;
-                newApplicantFee = firstTenSquareMetres;
-              } else {
-                renewalFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-                newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-              }
-            } else {
-              if (advertDimension === 1) {
-                renewalFee = firstSquareMetres;
-                newApplicantFee = firstSquareMetres;
-              } else if (advertDimension > 1) {
-                renewalFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-                newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-              }
-            }
-            // Add application fee to new applicant fee
-            newApplicantFee += applicationFee;
-            // Multiply by number of sides if needed
-            if (sideAdvertTypes.includes(foundAdvertType)) {
-              renewalFee = (parseFloat(renewalFee) || 0) * (numberOfSides || 1);
-              newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
-            }
+let baseFee = 0;
+const advertDimension = length * width;
+
+// Determine base fee (i.e., renewal fee without sides multiplication)
+if (foundAdvertType === "Directional Signs") {
+  baseFee = 10500;
+} else if (foundAdvertType === "Billboard") {
+  if (advertDimension < 3) {
+    baseFee = 0;
+  } else if (advertDimension === 3) {
+    baseFee = firstThreeMetres;
+  } else {
+    baseFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+  }
+} else if (foundAdvertType === "Corporate Flags") {
+  baseFee = perEachperYear;
+} else if (foundAdvertType === "Canvas") {
+  baseFee = firstSquareMetres;
+} else if (foundAdvertType === "Business Encroachment") {
+  if (advertDimension === 1) {
+    baseFee = firstSquareMetres;
+  } else {
+    baseFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+  }
+} else if (foundAdvertType === "Call In Adverts") {
+  baseFee = 18200;
+} else if (
+  foundAdvertType === "Wallpainting" ||
+  foundAdvertType === "Window Branding" ||
+  foundAdvertType === "Wall Branding"
+) {
+  if (advertDimension < 10) {
+    baseFee = 0;
+  } else if (advertDimension === 10) {
+    baseFee = firstTenSquareMetres;
+  } else {
+    baseFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+  }
+} else {
+  if (advertDimension === 1) {
+    baseFee = firstSquareMetres;
+  } else {
+    baseFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+  }
+}
+
+// Calculate renewal fee
+renewalFee = baseFee;
+
+// Calculate new applicant fee: (renewalFee * numberOfSides) + applicationFee
+if (sideAdvertTypes.includes(foundAdvertType)) {
+  renewalFee = baseFee * (numberOfSides || 1);
+  newApplicantFee = (baseFee * (numberOfSides || 1)) + applicationFee;
+} else {
+  newApplicantFee = baseFee + applicationFee;
+}
+
             // Format for display
             const formatCurrency = (amount) =>
               amount !== 0
@@ -513,10 +571,10 @@ const UBPAgent = () => {
             };
           } catch (e) {
             console.error(e);
-            errorMessage = "Could not fetch advert details.";
+            errorMessage = "I didn't understand your message.Please try again";
           }
         } else {
-          errorMessage = "I could not find a matching advert type.";
+          errorMessage = "I didn't understand your message.Please try again.";
         }
       }
 
