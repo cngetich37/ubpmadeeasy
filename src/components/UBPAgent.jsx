@@ -488,62 +488,62 @@ const UBPAgent = () => {
             //   newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
             // }
             let renewalFee = 0;
-let baseFee = 0;
-const advertDimension = length * width;
+            let baseFee = 0;
+            const advertDimension = length * width;
 
-// Determine base fee (i.e., renewal fee without sides multiplication)
-if (foundAdvertType === "Directional Signs") {
-  baseFee = 10500;
-} else if (foundAdvertType === "Billboard") {
-  if (advertDimension < 3) {
-    baseFee = 0;
-  } else if (advertDimension === 3) {
-    baseFee = firstThreeMetres;
-  } else {
-    baseFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-  }
-} else if (foundAdvertType === "Corporate Flags") {
-  baseFee = perEachperYear;
-} else if (foundAdvertType === "Canvas") {
-  baseFee = firstSquareMetres;
-} else if (foundAdvertType === "Business Encroachment") {
-  if (advertDimension === 1) {
-    baseFee = firstSquareMetres;
-  } else {
-    baseFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-  }
-} else if (foundAdvertType === "Call In Adverts") {
-  baseFee = 18200;
-} else if (
-  foundAdvertType === "Wallpainting" ||
-  foundAdvertType === "Window Branding" ||
-  foundAdvertType === "Wall Branding"
-) {
-  if (advertDimension < 10) {
-    baseFee = 0;
-  } else if (advertDimension === 10) {
-    baseFee = firstTenSquareMetres;
-  } else {
-    baseFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-  }
-} else {
-  if (advertDimension === 1) {
-    baseFee = firstSquareMetres;
-  } else {
-    baseFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-  }
-}
+            // Determine base fee (i.e., renewal fee without sides multiplication)
+            if (foundAdvertType === "Directional Signs") {
+              baseFee = 10500;
+            } else if (foundAdvertType === "Billboard") {
+              if (advertDimension < 3) {
+                baseFee = 0;
+              } else if (advertDimension === 3) {
+                baseFee = firstThreeMetres;
+              } else {
+                baseFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
+              }
+            } else if (foundAdvertType === "Corporate Flags") {
+              baseFee = perEachperYear;
+            } else if (foundAdvertType === "Canvas") {
+              baseFee = firstSquareMetres;
+            } else if (foundAdvertType === "Business Encroachment") {
+              if (advertDimension === 1) {
+                baseFee = firstSquareMetres;
+              } else {
+                baseFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
+              }
+            } else if (foundAdvertType === "Call In Adverts") {
+              baseFee = 18200;
+            } else if (
+              foundAdvertType === "Wallpainting" ||
+              foundAdvertType === "Window Branding" ||
+              foundAdvertType === "Wall Branding"
+            ) {
+              if (advertDimension < 10) {
+                baseFee = 0;
+              } else if (advertDimension === 10) {
+                baseFee = firstTenSquareMetres;
+              } else {
+                baseFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
+              }
+            } else {
+              if (advertDimension === 1) {
+                baseFee = firstSquareMetres;
+              } else {
+                baseFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
+              }
+            }
 
-// Calculate renewal fee
-renewalFee = baseFee;
+            // Calculate renewal fee
+            renewalFee = baseFee;
 
-// Calculate new applicant fee: (renewalFee * numberOfSides) + applicationFee
-if (sideAdvertTypes.includes(foundAdvertType)) {
-  renewalFee = baseFee * (numberOfSides || 1);
-  newApplicantFee = (baseFee * (numberOfSides || 1)) + applicationFee;
-} else {
-  newApplicantFee = baseFee + applicationFee;
-}
+            // Calculate new applicant fee: (renewalFee * numberOfSides) + applicationFee
+            if (sideAdvertTypes.includes(foundAdvertType)) {
+              renewalFee = baseFee * (numberOfSides || 1);
+              newApplicantFee = (baseFee * (numberOfSides || 1)) + applicationFee;
+            } else {
+              newApplicantFee = baseFee + applicationFee;
+            }
 
             // Format for display
             const formatCurrency = (amount) =>
