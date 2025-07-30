@@ -156,7 +156,7 @@ const UBPAgent = () => {
   const examplePrompts = [
     "Business charges for MPESA with 5 outlets?",
     "Above canopy with 2 sides?",
-    "Under canopy 1m by 2m",
+    "Under canopy 1m by 2m, 2 sides",
     "Food storage with 1000 sq.m?",
   ];
 
