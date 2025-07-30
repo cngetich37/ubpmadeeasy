@@ -156,7 +156,7 @@ const UBPAgent = () => {
   const examplePrompts = [
     "Business charges for MPESA with 5 outlets?",
     "Above canopy with 2 sides?",
-    "Kinyozi with 2 employees?",
+    "Under canopy 1m by 2m",
     "Food storage with 1000 sq.m?",
   ];
 
@@ -378,10 +378,10 @@ const UBPAgent = () => {
             businessResult = { bestMatch, businessDetails, selectedCategory, labelText, filterValue, industryMessage, businessCategoryMessage, businessSubCategoryMessage, businessActivityMessage };
           } catch (e) {
             console.error(e);
-            errorMessage = "Could not fetch business details.";
+            errorMessage = "I didn't understand your message.Please try again.";
           }
         } else {
-          errorMessage = "I could not find a matching business activity.";
+          errorMessage = "I didn't understand your message.Please try again.";
         }
       }
 
