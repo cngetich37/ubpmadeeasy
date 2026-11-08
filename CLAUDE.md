@@ -17,7 +17,7 @@ Render's free tier, so the first request after it has been idle can take ~30-50 
 ```bash
 npm install          # install deps
 npm run dev          # Vite dev server on http://localhost:5173
-npm test             # Vitest unit tests (src/**/*.test.js)
+npm test             # Vitest: unit tests + page render tests (src/**/*.test.{js,jsx})
 npm run lint         # ESLint, --max-warnings 0 (any warning fails)
 npm run build        # production build -> dist/
 npm run preview      # serve the built dist/
@@ -25,7 +25,8 @@ npm run generate-pwa-assets   # regenerate PWA icons from public/logo.svg
 ```
 
 Before finishing a change, run `npm test`, `npm run lint` and `npm run build`. All three pass on `main`, so keep it
-that way. Tests cover the pure logic in `src/lib/` only; check UI changes in `npm run dev`.
+that way. `src/lib/*.test.js` cover the pure logic; `src/components/pages.test.jsx` renders the three main pages
+in jsdom against a mocked `fetch`. Still check visual changes in `npm run dev`.
 
 Deploying (only when the user asks):
 - **Vercel** (`vercel.json`, all paths rewrite to `/`).
@@ -58,10 +59,11 @@ All environment-specific values come from Vite env vars, read in **`src/config.j
 - Tailwind CSS 3 + DaisyUI, `darkMode: 'class'`
 - `vite-plugin-pwa` (auto-update service worker, image caching via Workbox)
 - `react-select` for searchable dropdowns, `framer-motion` for animation
-- `jspdf` + `jspdf-autotable` + `qrcode` for PDF export
+- `jspdf` + `jspdf-autotable` + `qrcode` for PDF export, **dynamically imported** in `src/lib/pdf.js` so they
+  stay out of the main bundle. Don't import them statically elsewhere.
 - Icons: `react-icons` and `lucide-react`
 - `react-helmet` for per-page `<title>`/meta
-- Vitest for unit tests (node environment, no DOM)
+- Vitest; component tests opt into jsdom with a `// @vitest-environment jsdom` header and use Testing Library
 
 Use plain `fetch` through `src/lib/api.js`. axios was removed. Don't add dependencies for things the current stack already does.
 
@@ -73,16 +75,32 @@ src/
   App.jsx               Route table + Navbar/Footer shell
   config.js             Env-var config (see above)
   index.css             Tailwind + global table styles + theme CSS variables
-  lib/
+  lib/                  Plain JS, no React. Each module has a *.test.js next to it.
     api.js              Backend client: getJson() with timeout + ApiError, and the `api` endpoint map
+    activity.js         lookupActivityCodes / loadActivityDetails / loadActivity (codes -> descriptions + fee rows)
     fees.js             Advert fee calculation, matchNumberRange, SIDE_ADVERT_TYPES (single source of truth)
+    financeActs.js      Fee-row helpers: filterFinanceRows, rowTotal, unitLabel, FEE_COLUMNS
+    agentParser.js      Pure prompt parsing for the agent (numbers, sizes, activity/advert matching, row selection)
+    agent.js            answerPrompt (parse + fetch) and composeReply (chat text)
+    pdf.js              All PDF exports (business, advert, agent); lazy-loads jsPDF
+    format.js           formatKES, humanizeKey
     cache.js            Versioned, expiring localStorage cache + pruneLegacyStorage()
-    *.test.js           Vitest tests
+    speech.js           speak() / listenOnce() wrappers for the Web Speech API
+    selectStyles.js     react-select styles + selectedOption()
+  hooks/
+    useBusinessActivity.js  Activity dropdown + selected activity's codes, descriptions, fee rows
+    useAdvertFees.js        Advert dropdown, rates, size, and computed renewal / new-applicant fees
+    useApiError.js          Page-level error state for <ErrorBanner>
+    useChatSessions.js      Agent chat history persisted to localStorage
   components/
-    CombinedSearch.jsx  (~1500 lines) /ubp: business + advert search tabs, PDF export
-    UBPAgent.jsx        (~1100 lines) /agent: rule-based chat that parses free text, voice in/out, PDF export
-    UBPTutorial.jsx     (~1300 lines) /tutorial: step-by-step NairobiPay form walkthrough
-    ErrorBanner.jsx     Dismissible inline API-error message
+    CombinedSearch.jsx  /ubp page: owns both hooks (state survives tab switches), deep links, PDF download
+    UBPAgent.jsx        /agent page: wires chat UI to lib/agent.js, voice in/out
+    UBPTutorial.jsx     /tutorial page: step navigation, validation, form state
+    search/             BusinessTab, AdvertTab, FinanceActTable, DimensionInput, Field
+    agent/              ChatSidebar, ChatMessages, ChatInput, ExamplePrompts
+    tutorial/           One component per step + StepCard, FormFieldsStep, tutorialConfig.js (fields, copy, validation)
+    common/             ErrorBanner, MessageModal, LoadingIndicator
+    pages.test.jsx      Render tests for the three pages
     AdvertFormat.jsx    /advert: gallery of advert types from public/images.json
     Guide.jsx, FAQs.jsx, TermsAndConditions.jsx, UBPHome.jsx, Navbar.jsx, Footer.jsx
     ThemeContext.jsx / ThemeSwitcher.jsx   light/dark handling
@@ -91,6 +109,10 @@ public/
   images.json + images/ advert-type example photos used by /advert
   sitemap.xml, robots.txt, PWA icons
 ```
+
+Where things go: page components wire hooks to presentational components. Data fetching lives in `hooks/` (or
+`lib/` for one-off calls). Calculations and parsing live in `lib/` with tests. Presentational components get data
+and callbacks through props and don't call the API.
 
 ## Routing and the "auth" gate
 
@@ -121,14 +143,14 @@ Every call goes through `api` in `src/lib/api.js`. It encodes path segments, thr
 | `adverts()` | `GET /api/advert` | `[{ advertType }]` |
 | `advert(type)` | `GET /api/advert/{type}` | numeric rates: `applicationFee`, `firstSquareMetres`, `firstThreeMetres`, `firstTenSquareMetres`, `extraSquareMetres`, `perEachperYear`, plus `advertisementCategory` |
 
-Components follow the same pattern for effects that fetch: debounce with `setTimeout` plus a `cancelled` flag in the
-cleanup, so stale responses are dropped. On failure, `console.error` the error and show `API_ERROR_MESSAGE`
-in an `<ErrorBanner>`. Don't swallow errors silently.
+Hooks follow the same pattern for effects that fetch: debounce with `setTimeout` plus a `cancelled` flag in the
+cleanup, so stale responses are dropped. Hooks take `{ onError, onSuccess }` callbacks; pages get them from
+`useApiError()` and render `<ErrorBanner>`. Don't swallow errors silently.
 
 ## Fee calculation (most sensitive logic)
 
-All fee rules live in **`src/lib/fees.js`** and are tested in `fees.test.js`. Components must call it and never
-re-implement it. When a Finance Act rate or rule changes, update `fees.js` **and** its tests together.
+All fee rules live in **`src/lib/fees.js`** and are tested in `fees.test.js`. UI code reaches them through
+`useAdvertFees()` (or `lib/agent.js`) and must never re-implement them. When a Finance Act rate or rule changes, update `fees.js` **and** its tests together.
 
 **Business permit:** `matchNumberRange(description, n)` decides whether a Finance Act row's free-text
 `businessDescription` ("1-5 outlets", "up to 50 sq.m", "above 100", "less than 10", "over N", "with N vehicles")
@@ -145,7 +167,7 @@ With `area = length × width`:
 - **New applicant fee = renewal fee + `applicationFee`**, even when the renewal fee is 0
 
 Rates can be numbers, numeric strings or `""`. `fees.js` coerces them, so pass the raw API object or state values.
-Currency is KES, formatted with `toLocaleString("en-KE", { style: "currency", currency: "KES" })`.
+Currency is KES. Format with `formatKES()` from `src/lib/format.js` (output looks like `Ksh 1,500.00`).
 
 ## Client-side state and caching
 
@@ -181,13 +203,10 @@ Current keys:
 
 Discuss these with the user before starting:
 
-1. **Split the large components.** `CombinedSearch`, `UBPAgent` and `UBPTutorial` are each 1,100-1,500 lines.
-   Good first cuts: the business-search and advert-search tabs, and the PDF builders, which are near-duplicates
-   between `CombinedSearch` and `UBPAgent` and could move to `src/lib/pdf.js`.
-2. **Agent prompt parsing has no tests.** Activity matching, `extractNumbers`, and the dimension/sides regexes in
-   `UBPAgent.jsx` could move to `src/lib/` with tests.
-3. **Sitemap lists gated pages.** `public/sitemap.xml` lists `/advert` and `/faqs`, which are behind the terms
+1. **Sitemap lists gated pages.** `public/sitemap.xml` lists `/advert` and `/faqs`, which are behind the terms
    gate, so crawlers get redirected to `/`.
-4. **Bundle size.** The main chunk is over 500 kB (Vite warns). Lazy-load routes with `React.lazy`, and especially
-   jsPDF, which is only needed when exporting.
-5. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
+2. **Bundle size.** jsPDF is now lazy-loaded, but the main chunk is still ~500 kB. Lazy-load routes with
+   `React.lazy` to go further.
+3. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
+4. **Agent PDF blob URLs don't survive a reload.** Chat history is persisted, but the `blob:` links in old
+   messages stop working after a refresh.

@@ -25,6 +25,8 @@
     "react-select": "^5.8.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@vite-pwa/assets-generator": "^0.2.4",
@@ -36,6 +38,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "firebase-tools": "^13.34.0",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "vite": "^5.1.0",
