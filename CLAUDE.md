@@ -9,7 +9,7 @@ Guidance for Claude Code (and humans) working in this repository.
 Users look up a business activity (or an advert type with its size and number of sides), see the matching
 classification and fees, and download a branded PDF with a QR code that links back to the result.
 
-There is **no backend in this repo**. All data comes from a separate Node API (`VITE_API_URL`, currently on
+There is **no backend in this repo**. All data comes from a separate Node API (`UBP_API_URL`, currently on
 Render's free tier, so the first request after it has been idle can take ~30-50 s).
 
 ## Commands
@@ -35,20 +35,23 @@ Deploying (only when the user asks):
 
 ## Configuration
 
-All environment-specific values come from Vite env vars, read in **`src/config.js`**. Never hardcode URLs in components.
+All environment-specific values come from env vars with the project prefix **`UBP_`** (set via `envPrefix` in
+`vite.config.js`, so `VITE_*` vars are *not* exposed), read in **`src/config.js`**. Never hardcode URLs in components.
 
 | Variable | Used for |
 |---|---|
-| `VITE_API_URL` | Backend base URL (used only by `src/lib/api.js`) |
-| `VITE_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). Canonical domain: `https://ubp-easy.vercel.app`. `public/sitemap.xml` and `robots.txt` hardcode the same domain, so update them together |
-| `VITE_NAIROBI_PAY_URL` | NairobiPay links, plus the legacy-path redirect in `App.jsx` |
-| `VITE_FINANCE_ACT_URL` | Finance Act links, plus the legacy-path redirect in `App.jsx` |
+| `UBP_API_URL` | Backend base URL (used only by `src/lib/api.js`) |
+| `UBP_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). Canonical domain: `https://ubp-easy.vercel.app`. `public/sitemap.xml` and `robots.txt` hardcode the same domain, so update them together |
+| `UBP_NAIROBI_PAY_URL` | NairobiPay links, plus the legacy-path redirect in `App.jsx` |
+| `UBP_FINANCE_ACT_URL` | Finance Act links, plus the legacy-path redirect in `App.jsx` |
 
-- `.env` is **committed** and holds the production defaults (all public). `.env.example` documents the same keys.
-  Use `.env.local` (gitignored) for local overrides.
-- `config.js` throws on startup if a variable is missing. When you add one, update `.env`, `.env.example`,
-  `config.js` and the README table together.
-- `VITE_*` values are inlined into the bundle at build time. They are public, so never add secrets, and changing a
+- **No `.env` is committed.** Production values are set in Vercel (Project Settings → Environment Variables) and
+  applied at build time. `.env.example` is the template: copy it to `.env` (gitignored) for local dev and for
+  Firebase deploys, which build locally.
+- Tests don't read `.env`: `test.env` in `vite.config.js` supplies placeholder `*.example.test` URLs.
+- `config.js` throws on startup if a variable is missing. When you add one, update `.env.example`,
+  `config.js`, `test.env` in `vite.config.js`, the README table **and Vercel** together.
+- `UBP_*` values are inlined into the bundle at build time. They are public, so never add secrets, and changing a
   value on the hosting provider takes a rebuild.
 
 ## Stack

@@ -4,6 +4,18 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Only env vars starting with UBP_ are exposed to the app (import.meta.env.UBP_*).
+  // Never put secrets in them: they are inlined into the public bundle.
+  envPrefix: "UBP_",
+  // Tests don't read .env (it isn't committed); give them fixed placeholder values.
+  test: {
+    env: {
+      UBP_API_URL: "https://api.example.test",
+      UBP_SITE_URL: "https://site.example.test",
+      UBP_NAIROBI_PAY_URL: "https://pay.example.test/",
+      UBP_FINANCE_ACT_URL: "https://finance-act.example.test/download/act/",
+    },
+  },
   plugins: [
     react(),
     VitePWA({

@@ -18,7 +18,7 @@ and for **outdoor advertising licences**, based on the Nairobi City County Finan
 ## Tech
 
 React 18, Vite 5, React Router 6, Tailwind CSS + DaisyUI, react-select, jsPDF, Vitest.
-Data comes from a separate backend API (`VITE_API_URL`). This repo is frontend only.
+Data comes from a separate backend API (`UBP_API_URL`). This repo is frontend only.
 
 ## Getting started
 
@@ -29,15 +29,16 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Configuration lives in `.env` (committed, public defaults). To override a value locally, for example to point at a
-local backend, create `.env.local`:
+Configuration comes from environment variables. For deployments they are set in **Vercel** (Project Settings →
+Environment Variables); no `.env` is committed. For local development, copy `.env.example` to `.env` (gitignored)
+and adjust it:
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_URL` | Backend API base URL |
-| `VITE_SITE_URL` | Public URL of this site, used in PDF QR codes |
-| `VITE_NAIROBI_PAY_URL` | NairobiPay portal link |
-| `VITE_FINANCE_ACT_URL` | Finance Act download link |
+| `UBP_API_URL` | Backend API base URL |
+| `UBP_SITE_URL` | Public URL of this site, used in PDF QR codes |
+| `UBP_NAIROBI_PAY_URL` | NairobiPay portal link |
+| `UBP_FINANCE_ACT_URL` | Finance Act download link |
 
 These values are compiled into the JavaScript bundle, so never put secrets in them.
 

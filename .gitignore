@@ -28,6 +28,7 @@ dist-ssr
 # Firebase deploy cache
 .firebase/
 
-# Local env overrides
+# Env files: values are set in the hosting provider (Vercel); only .env.example is committed
+.env
 .env.local
 .env.*.local
