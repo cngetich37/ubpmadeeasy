@@ -13,7 +13,7 @@ const required = (name) => {
   return value.replace(/\/+$/, ""); // strip trailing slashes
 };
 
-/** Base URL of the UBP backend API, e.g. https://effortlessubp-backend.onrender.com */
+/** Base URL of the UBP backend API (no trailing slash needed). */
 export const API_URL = required("UBP_API_URL");
 
 /** Public URL of this site; used for the QR codes printed on PDFs. */

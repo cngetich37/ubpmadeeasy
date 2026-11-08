@@ -31,7 +31,8 @@ npm run dev        # http://localhost:5173
 
 Configuration comes from environment variables. For deployments they are set in **Vercel** (Project Settings →
 Environment Variables); no `.env` is committed. For local development, copy `.env.example` to `.env` (gitignored)
-and adjust it:
+and fill in the real values (ask a maintainer, or run `npx vercel env pull .env` if you have access to the
+Vercel project):
 
 | Variable | Purpose |
 |---|---|

@@ -41,13 +41,14 @@ All environment-specific values come from env vars with the project prefix **`UB
 | Variable | Used for |
 |---|---|
 | `UBP_API_URL` | Backend base URL (used only by `src/lib/api.js`) |
-| `UBP_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). Canonical domain: `https://ubp-easy.vercel.app`. `public/sitemap.xml` and `robots.txt` hardcode the same domain, so update them together. The sitemap lists **public routes only** (`/`, `/terms`); add a route there only if it is outside `ProtectedRoute` |
+| `UBP_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). `public/sitemap.xml` and `robots.txt` hardcode the production domain (they publish it to crawlers), so keep them in sync with the Vercel value. The sitemap lists **public routes only** (`/`, `/terms`); add a route there only if it is outside `ProtectedRoute` |
 | `UBP_NAIROBI_PAY_URL` | NairobiPay links, plus the legacy-path redirect in `App.jsx` |
 | `UBP_FINANCE_ACT_URL` | Finance Act links, plus the legacy-path redirect in `App.jsx` |
 
 - **No `.env` is committed.** Production values are set in Vercel (Project Settings → Environment Variables) and
-  applied at build time. `.env.example` is the template: copy it to `.env` (gitignored) for local dev and for
-  Firebase deploys, which build locally.
+  applied at build time. `.env.example` is the template and holds **placeholders only, never real values**.
+  Copy it to `.env` (gitignored) for local dev and Firebase deploys, which build locally, and fill it in,
+  e.g. with `npx vercel env pull .env`.
 - Tests don't read `.env`: `test.env` in `vite.config.js` supplies placeholder `*.example.test` URLs.
 - `config.js` throws on startup if a variable is missing. When you add one, update `.env.example`,
   `config.js`, `test.env` in `vite.config.js`, the README table **and Vercel** together.
