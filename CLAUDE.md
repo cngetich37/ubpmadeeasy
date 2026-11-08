@@ -41,7 +41,7 @@ All environment-specific values come from env vars with the project prefix **`UB
 | Variable | Used for |
 |---|---|
 | `UBP_API_URL` | Backend base URL (used only by `src/lib/api.js`) |
-| `UBP_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). Canonical domain: `https://ubp-easy.vercel.app`. `public/sitemap.xml` and `robots.txt` hardcode the same domain, so update them together |
+| `UBP_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). Canonical domain: `https://ubp-easy.vercel.app`. `public/sitemap.xml` and `robots.txt` hardcode the same domain, so update them together. The sitemap lists **public routes only** (`/`, `/terms`); add a route there only if it is outside `ProtectedRoute` |
 | `UBP_NAIROBI_PAY_URL` | NairobiPay links, plus the legacy-path redirect in `App.jsx` |
 | `UBP_FINANCE_ACT_URL` | Finance Act links, plus the legacy-path redirect in `App.jsx` |
 
@@ -206,10 +206,8 @@ Current keys:
 
 Discuss these with the user before starting:
 
-1. **Sitemap lists gated pages.** `public/sitemap.xml` lists `/advert` and `/faqs`, which are behind the terms
-   gate, so crawlers get redirected to `/`.
-2. **Bundle size.** jsPDF is now lazy-loaded, but the main chunk is still ~500 kB. Lazy-load routes with
+1. **Bundle size.** jsPDF is now lazy-loaded, but the main chunk is still ~500 kB. Lazy-load routes with
    `React.lazy` to go further.
-3. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
-4. **Agent PDF blob URLs don't survive a reload.** Chat history is persisted, but the `blob:` links in old
+2. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
+3. **Agent PDF blob URLs don't survive a reload.** Chat history is persisted, but the `blob:` links in old
    messages stop working after a refresh.
