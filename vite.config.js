@@ -16,6 +16,19 @@ export default defineConfig({
       UBP_FINANCE_ACT_URL: "https://finance-act.example.test/download/act/",
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries that rarely change get their own long-cached chunks, so a
+        // deploy that only touches app code doesn't make users re-download them.
+        // (Pages are split separately via lazyPage() in App.jsx.)
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          motion: ["framer-motion"],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

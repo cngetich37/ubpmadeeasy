@@ -75,7 +75,7 @@ Use plain `fetch` through `src/lib/api.js`. axios was removed. Don't add depende
 ```
 src/
   main.jsx              Prunes legacy localStorage, then ThemeProvider > BrowserRouter > App
-  App.jsx               Route table + Navbar/Footer shell
+  App.jsx               Route table + Navbar/Footer shell; pages are lazy-loaded (see Bundle below)
   config.js             Env-var config (see above)
   index.css             Tailwind + global table styles + theme CSS variables
   lib/                  Plain JS, no React. Each module has a *.test.js next to it.
@@ -90,6 +90,7 @@ src/
     cache.js            Versioned, expiring localStorage cache + pruneLegacyStorage()
     speech.js           speak() / listenOnce() wrappers for the Web Speech API
     selectStyles.js     react-select styles + selectedOption()
+    lazyPage.js         React.lazy wrapper that reloads once if a chunk is gone after a deploy
   hooks/
     useBusinessActivity.js  Activity dropdown + selected activity's codes, descriptions, fee rows
     useAdvertFees.js        Advert dropdown, rates, size, and computed renewal / new-applicant fees
@@ -102,7 +103,7 @@ src/
     search/             BusinessTab, AdvertTab, FinanceActTable, DimensionInput, Field
     agent/              ChatSidebar, ChatMessages, ChatInput, ExamplePrompts
     tutorial/           One component per step + StepCard, FormFieldsStep, tutorialConfig.js (fields, copy, validation)
-    common/             ErrorBanner, MessageModal, LoadingIndicator
+    common/             ErrorBanner, MessageModal, LoadingIndicator, PageLoader (Suspense fallback)
     pages.test.jsx      Render tests for the three pages
     AdvertFormat.jsx    /advert: gallery of advert types from public/images.json
     Guide.jsx, FAQs.jsx, TermsAndConditions.jsx, UBPHome.jsx, Navbar.jsx, Footer.jsx
@@ -116,6 +117,18 @@ public/
 Where things go: page components wire hooks to presentational components. Data fetching lives in `hooks/` (or
 `lib/` for one-off calls). Calculations and parsing live in `lib/` with tests. Presentational components get data
 and callbacks through props and don't call the API.
+
+## Bundle
+
+The landing page must stay light; most visitors arrive on phones.
+
+- Only `UBPHome`, `Navbar`, `Footer` and `ProtectedRoute` are imported eagerly in `App.jsx`. **Every other page is
+  loaded with `lazyPage(() => import(...))`** inside `<Suspense fallback={<PageLoader />}>`. Add new pages the same way.
+- `manualChunks` in `vite.config.js` puts React + router (`react`) and framer-motion (`motion`) in their own
+  long-cached chunks, so a normal deploy only changes the ~30 kB app chunk.
+- jsPDF / autotable / qrcode are dynamically imported in `src/lib/pdf.js`; never import them statically.
+- After a build, check the output: the entry `index-*.js` should stay well under 100 kB and Vite should print no
+  chunk-size warning.
 
 ## Routing and the "auth" gate
 
@@ -206,8 +219,6 @@ Current keys:
 
 Discuss these with the user before starting:
 
-1. **Bundle size.** jsPDF is now lazy-loaded, but the main chunk is still ~500 kB. Lazy-load routes with
-   `React.lazy` to go further.
-2. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
-3. **Agent PDF blob URLs don't survive a reload.** Chat history is persisted, but the `blob:` links in old
+1. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
+2. **Agent PDF blob URLs don't survive a reload.** Chat history is persisted, but the `blob:` links in old
    messages stop working after a refresh.
