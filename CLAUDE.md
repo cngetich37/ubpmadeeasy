@@ -39,7 +39,7 @@ All environment-specific values come from Vite env vars, read in **`src/config.j
 | Variable | Used for |
 |---|---|
 | `VITE_API_URL` | Backend base URL (used only by `src/lib/api.js`) |
-| `VITE_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`) |
+| `VITE_SITE_URL` | QR codes in generated PDFs (`${SITE_URL}/ubp?ubp=…`). Canonical domain: `https://ubp-easy.vercel.app`. `public/sitemap.xml` and `robots.txt` hardcode the same domain, so update them together |
 | `VITE_NAIROBI_PAY_URL` | NairobiPay links, plus the legacy-path redirect in `App.jsx` |
 | `VITE_FINANCE_ACT_URL` | Finance Act links, plus the legacy-path redirect in `App.jsx` |
 
@@ -186,9 +186,8 @@ Discuss these with the user before starting:
    between `CombinedSearch` and `UBPAgent` and could move to `src/lib/pdf.js`.
 2. **Agent prompt parsing has no tests.** Activity matching, `extractNumbers`, and the dimension/sides regexes in
    `UBPAgent.jsx` could move to `src/lib/` with tests.
-3. **Pick one canonical domain.** QR codes use `VITE_SITE_URL` (`ubpeasy.vercel.app`), while `public/sitemap.xml`
-   and `robots.txt` hardcode `ubpeasy.cnetechafrica.org`. The sitemap also lists `/advert` and `/faqs`, which are
-   behind the terms gate, so crawlers get redirected.
+3. **Sitemap lists gated pages.** `public/sitemap.xml` lists `/advert` and `/faqs`, which are behind the terms
+   gate, so crawlers get redirected to `/`.
 4. **Bundle size.** The main chunk is over 500 kB (Vite warns). Lazy-load routes with `React.lazy`, and especially
    jsPDF, which is only needed when exporting.
 5. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.

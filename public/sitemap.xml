@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://ubpeasy.cnetechafrica.org/</loc>
+        <loc>https://ubp-easy.vercel.app/</loc>
         <lastmod>2025-02-24</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://ubpeasy.cnetechafrica.org/advert</loc>
+        <loc>https://ubp-easy.vercel.app/advert</loc>
         <lastmod>2025-02-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
-        <loc>https://ubpeasy.cnetechafrica.org/faqs</loc>
+        <loc>https://ubp-easy.vercel.app/faqs</loc>
         <lastmod>2025-02-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
