@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import { ChevronLeft, ChevronRight, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import Select from "react-select";
-import axios from "axios";
+import { calculateAdvertFees, SIDE_ADVERT_TYPES } from "../lib/fees";
+import { api, API_ERROR_MESSAGE } from "../lib/api";
+import { readCache, writeCache } from "../lib/cache";
+import { NAIROBI_PAY_URL } from "../config";
+import ErrorBanner from "./ErrorBanner";
+
+const SEARCH_DEBOUNCE_MS = 500;
 
 const steps = [
   "Application Type",
@@ -35,6 +41,7 @@ const UBPTutorial = () => {
   const [businessSubCategoryMessage, setBusinessSubCategoryMessage] = useState("");
   const [businessActivityMessage, setBusinessActivityMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   // Add after business activity state
   // Advert Details Search State (from CombinedSearch)
@@ -51,13 +58,6 @@ const UBPTutorial = () => {
   const [extraSquareMetres, setExtraSquareMetres] = useState("");
   const [licenceFee, setLicenceFee] = useState("");
   const [licenceFeeN, setLicenceFeeN] = useState("");
-  const [sideAdvertTypes] = useState([
-    "Above Canopy",
-    "Under Canopy",
-    "Directional Signs",
-    "Billboard",
-    "Call In Adverts"
-  ]);
 
   // Add perEachperYear state for advert details
   const [perEachperYear, setPerEachperYear] = useState("");
@@ -75,7 +75,7 @@ const UBPTutorial = () => {
   const [showModal, setShowModal] = useState(false);
 
   // Add TTS state
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [, setIsSpeaking] = useState(false);
 
   // Add focus state for each field
   const [focusedField, setFocusedField] = useState("");
@@ -153,36 +153,59 @@ const UBPTutorial = () => {
     if (!advertSearchInput) errors.advertSearchInput = 'Required';
     if (!length || length <= 0) errors.length = 'Required';
     if (!width || width <= 0) errors.width = 'Required';
-    if (sideAdvertTypes.includes(advertSearchInput) && (!numberOfSides || numberOfSides <= 0)) errors.numberOfSides = 'Required';
+    if (SIDE_ADVERT_TYPES.includes(advertSearchInput) && (!numberOfSides || numberOfSides <= 0)) errors.numberOfSides = 'Required';
     setAdvertErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Replace businessOptions fetch logic
-  // Business Activity Options Fetch (from CombinedSearch)
+  const clearActivity = () => {
+    setIndustry("");
+    setBusinessCategory("");
+    setBusinessSubCategory("");
+    setBusinessActivity("");
+    setIndustryMessage("");
+    setBusinessCategoryMessage("");
+    setBusinessSubCategoryMessage("");
+    setBusinessActivityMessage("");
+    setFormData((f) => ({ ...f, businessActivity: {} }));
+  };
+
+  const clearAdvert = () => {
+    setAdvertisementCategory("");
+    setApplicationFee("");
+    setFirstThreeMetres("");
+    setFirstSquareMetres("");
+    setFirstTenSquareMetres("");
+    setExtraSquareMetres("");
+    setPerEachperYear("");
+    setLicenceFee("");
+    setLicenceFeeN("");
+    setFormData((f) => ({ ...f, advertDetails: {} }));
+  };
+
+  // Business activity dropdown options (cached for a day)
   React.useEffect(() => {
     async function fetchOptions() {
+      const cached = readCache("businessOptions");
+      if (cached) {
+        setBusinessOptions(cached);
+        return;
+      }
       setLoading(true);
       try {
-        const cachedOptions = localStorage.getItem("businessOptions");
-        if (cachedOptions) {
-          setBusinessOptions(JSON.parse(cachedOptions));
-          setLoading(false);
-          return;
-        }
-        const response = await fetch(
-          "https://effortlessubp-backend.onrender.com/api/naics/ubpdictionary"
-        );
-        const optionsData = await response.json();
-        const fetchedOptions = optionsData.map((item) => ({
-          value: item.commonBusinessActivity,
-          label: item.commonBusinessActivity,
-        }));
-        fetchedOptions.sort((a, b) => a.label.localeCompare(b.label));
-        localStorage.setItem("businessOptions", JSON.stringify(fetchedOptions));
+        const optionsData = await api.ubpDictionary();
+        const fetchedOptions = optionsData
+          .map((item) => ({
+            value: item.commonBusinessActivity,
+            label: item.commonBusinessActivity,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        writeCache("businessOptions", fetchedOptions);
         setBusinessOptions(fetchedOptions);
       } catch (error) {
+        console.error(error);
         setBusinessOptions([]);
+        setApiError(API_ERROR_MESSAGE);
       } finally {
         setLoading(false);
       }
@@ -190,138 +213,67 @@ const UBPTutorial = () => {
     fetchOptions();
   }, []);
 
-  // Debounced, cached fetch for business activity details
-  const getCachedBusinessActivity = (query) => {
-    const cachedData = localStorage.getItem(query);
-    if (cachedData) {
-      return JSON.parse(cachedData);
+  // Business activity name -> codes + descriptions (debounced)
+  React.useEffect(() => {
+    if (searchInput === "") {
+      clearActivity();
+      return;
     }
-    return null;
-  };
-  const cacheBusinessActivity = (query, data) => {
-    localStorage.setItem(query, JSON.stringify(data));
-  };
-  // Debounce helper
-  const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        func(...args);
-      }, delay);
-    };
-  };
-  // Debounced fetch function
-  const debouncedFetchBusinessActivity = React.useRef(
-    debounce(async (query) => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       try {
         setLoading(true);
-        const cachedData = getCachedBusinessActivity(query);
-        let industryMsg = "";
-        let businessCategoryMsg = "";
-        let businessSubCategoryMsg = "";
-        let businessActivityMsg = "";
-        let data;
-        if (cachedData) {
-          data = cachedData;
-        } else {
-          const response = await fetch(
-            `https://effortlessubp-backend.onrender.com/api/naics/${encodeURIComponent(query)}`
-          );
-          if (!response.ok) throw new Error('Failed to fetch business activity details');
-          data = await response.json();
-          cacheBusinessActivity(query, data);
+        let data = readCache(`lookup:${searchInput}`);
+        if (!data) {
+          data = await api.lookupActivity(searchInput);
+          writeCache(`lookup:${searchInput}`, data);
         }
-        // Fetch descriptions/messages for each field
-        const [industryRes, businessCategoryRes, businessSubCategoryRes, businessActivityRes] = await Promise.all([
-          fetch(`https://effortlessubp-backend.onrender.com/api/naics/industry/${encodeURIComponent(data.industry || "")}`),
-          fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesscategories/${encodeURIComponent(data.businessCategory || "")}`),
-          fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesssubcategories/${encodeURIComponent(data.businessSubCategory || "")}`),
-          fetch(`https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${encodeURIComponent(data.businessActivity || "")}`),
-        ]);
-        const [industryJson, businessCategoryJson, businessSubCategoryJson, businessActivityJson] = await Promise.all([
-          industryRes.json(),
-          businessCategoryRes.json(),
-          businessSubCategoryRes.json(),
-          businessActivityRes.json(),
-        ]);
-        industryMsg = industryJson.industry || "";
-        businessCategoryMsg = businessCategoryJson.businessCategory || "";
-        businessSubCategoryMsg = businessSubCategoryJson.businessSubCategory || "";
-        businessActivityMsg = businessActivityJson.businessActivity || "";
+        const [industryJson, businessCategoryJson, businessSubCategoryJson, businessActivityJson] =
+          await Promise.all([
+            api.industry(data.industry || ""),
+            api.businessCategory(data.businessCategory || ""),
+            api.businessSubCategory(data.businessSubCategory || ""),
+            api.businessActivity(data.businessActivity || ""),
+          ]);
+        if (cancelled) return;
         setIndustry(data.industry || "");
         setBusinessCategory(data.businessCategory || "");
         setBusinessSubCategory(data.businessSubCategory || "");
         setBusinessActivity(data.businessActivity || "");
-        setIndustryMessage(industryMsg);
-        setBusinessCategoryMessage(businessCategoryMsg);
-        setBusinessSubCategoryMessage(businessSubCategoryMsg);
-        setBusinessActivityMessage(businessActivityMsg);
-        setFormData((f) => ({
-          ...f,
-          businessActivity: {
-            searchInput: query,
-            industry: data.industry,
-            businessCategory: data.businessCategory,
-            businessSubCategory: data.businessSubCategory,
-            businessActivity: data.businessActivity,
-          },
-        }));
-        setLoading(false);
-        return;
-      } catch (e) {
-        setIndustry("");
-        setBusinessCategory("");
-        setBusinessSubCategory("");
-        setBusinessActivity("");
-        setIndustryMessage("");
-        setBusinessCategoryMessage("");
-        setBusinessSubCategoryMessage("");
-        setBusinessActivityMessage("");
-        setFormData((f) => ({ ...f, businessActivity: {} }));
+        setIndustryMessage(industryJson.industry || "");
+        setBusinessCategoryMessage(businessCategoryJson.businessCategory || "");
+        setBusinessSubCategoryMessage(businessSubCategoryJson.businessSubCategory || "");
+        setBusinessActivityMessage(businessActivityJson.businessActivity || "");
+        setApiError(null);
+      } catch (error) {
+        if (cancelled) return;
+        console.error(error);
+        clearActivity();
+        setApiError(API_ERROR_MESSAGE);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    }, 500)
-  ).current;
-
-  // Watch searchInput and fetch details
-  React.useEffect(() => {
-    if (searchInput !== "") {
-      debouncedFetchBusinessActivity(searchInput);
-    } else {
-      setIndustry("");
-      setBusinessCategory("");
-      setBusinessSubCategory("");
-      setBusinessActivity("");
-      setIndustryMessage("");
-      setBusinessCategoryMessage("");
-      setBusinessSubCategoryMessage("");
-      setBusinessActivityMessage("");
-      setFormData((f) => ({ ...f, businessActivity: {} }));
-    }
-    // eslint-disable-next-line
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [searchInput]);
 
-  // Fetch advert options (from CombinedSearch)
+  // Advert type dropdown options
   React.useEffect(() => {
     async function fetchOptions() {
       setLoading(true);
       try {
-        const response = await fetch(
-          "https://effortlessubp-backend.onrender.com/api/advert"
-        );
-        const optionsData = await response.json();
-        const fetchedOptions = optionsData.map((item) => ({
-          value: item.advertType,
-          label: item.advertType,
-        }));
-        fetchedOptions.sort((a, b) => a.label.localeCompare(b.label));
+        const optionsData = await api.adverts();
+        const fetchedOptions = optionsData
+          .map((item) => ({ value: item.advertType, label: item.advertType }))
+          .sort((a, b) => a.label.localeCompare(b.label));
         setAdvertOptions(fetchedOptions);
       } catch (error) {
+        console.error(error);
         setAdvertOptions([]);
+        setApiError(API_ERROR_MESSAGE);
       } finally {
         setLoading(false);
       }
@@ -329,27 +281,19 @@ const UBPTutorial = () => {
     fetchOptions();
   }, []);
 
-  // Debounced fetch for advert details (from CombinedSearch)
-  const debounceAdvert = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        func(...args);
-      }, delay);
-    };
-  };
-  const debouncedFetchAdvert = React.useRef(
-    debounceAdvert(async (query) => {
+  // Advert type -> rates (debounced). Fees are recalculated separately below so
+  // they follow length / width / sides changes without refetching.
+  React.useEffect(() => {
+    if (advertSearchInput === "") {
+      clearAdvert();
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `https://effortlessubp-backend.onrender.com/api/advert/${encodeURIComponent(query)}`
-        );
-        if (!response.ok) throw new Error('Failed to fetch advert details');
-        const data = await response.json();
+        const data = await api.advert(advertSearchInput);
+        if (cancelled) return;
         setAdvertisementCategory(data.advertisementCategory || "");
         setApplicationFee(data.applicationFee || "");
         setFirstThreeMetres(data.firstThreeMetres || "");
@@ -357,126 +301,56 @@ const UBPTutorial = () => {
         setFirstTenSquareMetres(data.firstTenSquareMetres || "");
         setExtraSquareMetres(data.extraSquareMetres || "");
         setPerEachperYear(data.perEachperYear || "");
-        // Calculate licenceFee and licenceFeeN as in CombinedSearch
-        let renewalFee = 0;
-        let newApplicantFee = 0;
-        const advertDimension = length * width;
-        if (query === "Directional Signs") {
-          renewalFee = 10500;
-          newApplicantFee = 10500;
-        } else if (query === "Billboard") {
-          if (advertDimension < 3) {
-            renewalFee = 0;
-            newApplicantFee = 0;
-          } else if (advertDimension > 3) {
-            renewalFee = (advertDimension - 3) * data.extraSquareMetres + data.firstThreeMetres;
-            newApplicantFee = (advertDimension - 3) * data.extraSquareMetres + data.firstThreeMetres;
-          } else {
-            renewalFee = data.firstThreeMetres;
-            newApplicantFee = data.firstThreeMetres;
-          }
-        } else if (query === "Corporate Flags") {
-          renewalFee = data.perEachperYear;
-          newApplicantFee = data.perEachperYear;
-        } else if (query === "Canvas") {
-          renewalFee = data.firstSquareMetres;
-          newApplicantFee = data.firstSquareMetres;
-        } else if (query === "Business Encroachment") {
-          if (advertDimension === 1) {
-            renewalFee = data.firstSquareMetres;
-            newApplicantFee = data.firstSquareMetres;
-          } else {
-            renewalFee = (advertDimension - 1) * data.firstSquareMetres + data.firstSquareMetres;
-            newApplicantFee = (advertDimension - 1) * data.firstSquareMetres + data.firstSquareMetres;
-          }
-        } else if (query === "Call In Adverts") {
-          renewalFee = 18200;
-          newApplicantFee = 18200;
-        } else if (
-          query === "Wallpainting" ||
-          query === "Window Branding" ||
-          query === "Wall Branding"
-        ) {
-          if (advertDimension < 10) {
-            renewalFee = 0;
-            newApplicantFee = 0;
-          } else if (advertDimension === 10) {
-            renewalFee = data.firstTenSquareMetres;
-            newApplicantFee = data.firstTenSquareMetres;
-          } else {
-            renewalFee = (advertDimension - 10) * data.extraSquareMetres + data.firstTenSquareMetres;
-            newApplicantFee = (advertDimension - 10) * data.extraSquareMetres + data.firstTenSquareMetres;
-          }
-        } else {
-          if (advertDimension === 1) {
-            renewalFee = data.firstSquareMetres;
-            newApplicantFee = data.firstSquareMetres;
-          } else if (advertDimension > 1) {
-            renewalFee = (advertDimension - 1) * data.extraSquareMetres + data.firstSquareMetres;
-            newApplicantFee = (advertDimension - 1) * data.extraSquareMetres + data.firstSquareMetres;
-          }
-        }
-        if (sideAdvertTypes.includes(query)) {
-          renewalFee = (parseFloat(renewalFee) || 0) * (numberOfSides || 1);
-          newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
-        }
-        newApplicantFee += parseFloat(data.applicationFee || 0);
-        setLicenceFee(renewalFee);
-        setLicenceFeeN(newApplicantFee);
-        setFormData((f) => ({
-          ...f,
-          advertDetails: {
-            ...f.advertDetails,
-            advertSearchInput: query,
-            advertisementCategory: data.advertisementCategory,
-            applicationFee: data.applicationFee,
-            firstThreeMetres: data.firstThreeMetres,
-            firstSquareMetres: data.firstSquareMetres,
-            firstTenSquareMetres: data.firstTenSquareMetres,
-            extraSquareMetres: data.extraSquareMetres,
-            perEachperYear: data.perEachperYear,
-            licenceFee: renewalFee,
-            licenceFeeN: newApplicantFee,
-            length,
-            width,
-            numberOfSides: sideAdvertTypes.includes(query) ? numberOfSides : undefined,
-          },
-        }));
-      } catch (e) {
-        setAdvertisementCategory("");
-        setApplicationFee("");
-        setFirstThreeMetres("");
-        setFirstSquareMetres("");
-        setFirstTenSquareMetres("");
-        setExtraSquareMetres("");
-        setPerEachperYear("");
-        setLicenceFee("");
-        setLicenceFeeN("");
-        setFormData((f) => ({ ...f, advertDetails: {} }));
+        setApiError(null);
+      } catch (error) {
+        if (cancelled) return;
+        console.error(error);
+        clearAdvert();
+        setApiError(API_ERROR_MESSAGE);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    }, 500)
-  ).current;
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [advertSearchInput]);
 
-  // Watch advertSearchInput and fetch details
+  // Recalculate fees whenever the rates or the advert size change.
   React.useEffect(() => {
-    if (advertSearchInput !== "") {
-      debouncedFetchAdvert(advertSearchInput);
-    } else {
-      setAdvertisementCategory("");
-      setApplicationFee("");
-      setFirstThreeMetres("");
-      setFirstSquareMetres("");
-      setFirstTenSquareMetres("");
-      setExtraSquareMetres("");
-      setPerEachperYear("");
+    if (!advertSearchInput || advertisementCategory === "") {
       setLicenceFee("");
       setLicenceFeeN("");
-      setFormData((f) => ({ ...f, advertDetails: {} }));
+      return;
     }
-    // eslint-disable-next-line
-  }, [advertSearchInput, length, width, numberOfSides]);
+    const { renewalFee, newApplicantFee } = calculateAdvertFees(
+      advertSearchInput,
+      {
+        applicationFee,
+        firstSquareMetres,
+        firstThreeMetres,
+        firstTenSquareMetres,
+        extraSquareMetres,
+        perEachperYear,
+      },
+      { length, width, numberOfSides }
+    );
+    setLicenceFee(renewalFee);
+    setLicenceFeeN(newApplicantFee);
+  }, [
+    advertSearchInput,
+    advertisementCategory,
+    applicationFee,
+    firstSquareMetres,
+    firstThreeMetres,
+    firstTenSquareMetres,
+    extraSquareMetres,
+    perEachperYear,
+    length,
+    width,
+    numberOfSides,
+  ]);
 
   // Clear errors when step or relevant state changes
   React.useEffect(() => {
@@ -508,7 +382,7 @@ const UBPTutorial = () => {
           advertisementCategory,
           length,
           width,
-          numberOfSides: sideAdvertTypes.includes(advertSearchInput) ? numberOfSides : undefined,
+          numberOfSides: SIDE_ADVERT_TYPES.includes(advertSearchInput) ? numberOfSides : undefined,
           applicationFee,
           firstThreeMetres,
           firstSquareMetres,
@@ -521,7 +395,7 @@ const UBPTutorial = () => {
     } else {
       setFormData((f) => ({ ...f, advertDetails: {} }));
     }
-  }, [showAdvert, advertSearchInput, advertisementCategory, length, width, numberOfSides, applicationFee, firstThreeMetres, firstSquareMetres, firstTenSquareMetres, extraSquareMetres, licenceFee, licenceFeeN, sideAdvertTypes]);
+  }, [showAdvert, advertSearchInput, advertisementCategory, length, width, numberOfSides, applicationFee, firstThreeMetres, firstSquareMetres, firstTenSquareMetres, extraSquareMetres, licenceFee, licenceFeeN]);
 
   // Navigation handlers (update handleNext)
   const handleNext = () => {
@@ -1059,7 +933,7 @@ const UBPTutorial = () => {
                     />
                   </div>
                   {/* Number of Sides field only for certain advert types */}
-                  {sideAdvertTypes.includes(advertSearchInput) && (
+                  {SIDE_ADVERT_TYPES.includes(advertSearchInput) && (
                     <div className="flex flex-col">
                       <label className="text-md text-emerald-900 dark:text-white font-medium">Number of Sides *</label>
                       <input
@@ -1334,7 +1208,7 @@ const UBPTutorial = () => {
                   <h2 className="text-2xl font-bold text-emerald-900 dark:text-white mb-4 text-center">Tutorial Complete!</h2>
                   <p className="text-lg text-emerald-900 dark:text-white mb-6 text-center">
                     The tutorial is complete.<br />
-                    Head over to <a href="https://nairobiservices.go.ke/" target="_blank" rel="noopener noreferrer" className="text-[#EAB308] underline font-semibold dark:text-[var(--color-primary)]">NairobiPay</a> to apply for Unified Business Permit.<br />
+                    Head over to <a href={NAIROBI_PAY_URL} target="_blank" rel="noopener noreferrer" className="text-[#EAB308] underline font-semibold dark:text-[var(--color-primary)]">NairobiPay</a> to apply for Unified Business Permit.<br />
                     <span className="block mt-2">Thank you!</span>
                   </p>
                   <button
@@ -1389,6 +1263,7 @@ const UBPTutorial = () => {
             </ul>
           </div>
           <div className="border p-5 rounded shadow w-full min-h-[60vh] overflow-y-auto dark:bg-[var(--color-bg)] dark:border-gray-700">
+            <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />
             {renderStep()}
           </div>
           <div className="flex justify-between mt-6 sticky bottom-0 bg-white dark:bg-[var(--color-surface)] py-4">

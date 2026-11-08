@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router-dom";
 import logo from "/UBPMadeEasy.webp";
 import { motion } from "framer-motion";
+import { FINANCE_ACT_URL } from "../config";
 
 const generateToken = () => {
   const token = {
@@ -105,7 +106,7 @@ const TermsAndConditions = () => {
                 <p className="text-emerald-900 dark:text-[var(--color-text)] text-sm font-medium italic">
                   <span className="font-semibold text-emerald-900 dark:text-[var(--color-text)]">Notice:</span> This software is provided free of charge and is intended as an informational tool. Users should not rely on this system as an official source of truth. Errors or inaccuracies may exist. It is recommended to consult the
                   <a
-                    href="https://nairobi.go.ke/download/the-nairobi-city-county-finance-act2023/"
+                    href={FINANCE_ACT_URL}
                     className="text-emerald-900 dark:text-yellow-300 hover:text-[#A71D2D] dark:hover:text-yellow-400 font-bold underline ml-1"
                     target="_blank"
                     rel="noopener noreferrer"

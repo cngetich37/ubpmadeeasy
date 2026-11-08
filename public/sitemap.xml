@@ -13,21 +13,9 @@
         <priority>0.7</priority>
     </url>
     <url>
-        <loc>https://ubpeasy.cnetechafrica.org/contact</loc>
-        <lastmod>2025-02-24</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.7</priority>
-    </url>
-    <url>
         <loc>https://ubpeasy.cnetechafrica.org/faqs</loc>
         <lastmod>2025-02-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
-    </url>
-    <url>
-        <loc>https://ubpeasy.cnetechafrica.org/financeact</loc>
-        <lastmod>2025-02-24</lastmod>
-        <changefreq>yearly</changefreq>
-        <priority>0.5</priority>
     </url>
 </urlset>

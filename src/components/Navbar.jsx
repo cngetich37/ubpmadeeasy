@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { IoMdMenu, IoMdClose } from "react-icons/io";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,7 +7,6 @@ import { LuSearch } from "react-icons/lu";
 import { LiaSignSolid } from "react-icons/lia";
 import {
   FaQuestionCircle,
-  FaListAlt,
   FaRobot,
   FaMagic
 } from "react-icons/fa";

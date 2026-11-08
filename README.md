@@ -1,105 +1,67 @@
 # UBPMadeEasy
 
-## Search UBP
-
-This repository contains the source code for a web application that provides information about various business activities. Users can search for specific business activities, view details about industries, business categories, subcategories, and access financeact-related information for selected activities.
+A web app that helps businesses in Nairobi work out what they will pay for the **Unified Business Permit (UBP)**
+and for **outdoor advertising licences**, based on the Nairobi City County Finance Act.
 
 ## Features
 
-- **Search Functionality**: Users can search for specific business activities using a search input field.
-- **Dynamic Data Loading**: The application dynamically loads data from an external API based on user input and selected options.
-- **Detailed Information**: Users can view detailed information about industries, business categories, and subcategories related to the selected business activity.
-- **Finance Act Display**: Finance-related data, including trade licence, fire clearance, food hygiene, health certificates, and pest control, are displayed in a tabular format.
-- **PDF Sharing**: Users can generate and share PDF documents containing detailed information about the selected business activity and its finance-related data.
+- **UBP search** (`/ubp`): pick a business activity to see its industry / category / sub-category / activity
+  classification and the Finance Act charges (trade licence, fire clearance, food hygiene, health certificate,
+  pest control), filtered by size (outlets, employees, m², …).
+- **Advert fees** (`/ubp`, Advert tab): pick an advert type, enter its size and number of sides, and get the renewal
+  and new-applicant licence fees.
+- **UBP Agent** (`/agent`): ask in plain English, e.g. *"Under canopy 1m by 2m, 2 sides"*, with voice input and read-aloud.
+- **Tutorial** (`/tutorial`): step-by-step walkthrough of the NairobiPay application form.
+- **PDF export**: branded PDFs with a QR code linking back to the result.
+- Light/dark theme, installable as a PWA.
 
-## Technologies Used
+## Tech
 
-- **React**: The frontend of the application is built using React, a popular JavaScript library for building user interfaces.
-- **React Router**: Used for client-side routing, enabling navigation between different components of the application.
-- **react-select**: Provides a customizable Select component for searching and selecting business activities.
-- **jspdf**: Utilized for generating PDF documents dynamically within the application.
-- **CSS**: Custom CSS styles are used for styling components and enhancing the user interface.
-- **Fetch API**: Used for making asynchronous HTTP requests to fetch data from the backend API.
-- **Node.js**: The backend API is built using Node.js, providing data related to industries, business categories, subcategories, and finance-related information.
+React 18, Vite 5, React Router 6, Tailwind CSS + DaisyUI, react-select, jsPDF, Vitest.
+Data comes from a separate backend API (`VITE_API_URL`). This repo is frontend only.
 
-## Search Advert
+## Getting started
 
-The `SearchAdvert` is a React component responsible for displaying and managing outdoor advertisement search functionality. It allows users to search for different types of advertisements and calculates the associated fees based on user input.
+```bash
+git clone https://github.com/cngetich37/ubpmadeeasy.git
+cd ubpmadeeasy
+npm install
+npm run dev        # http://localhost:5173
+```
 
-### State Variables
+Configuration lives in `.env` (committed, public defaults). To override a value locally, for example to point at a
+local backend, create `.env.local`:
 
-- **searchInput**: Manages the user input for the advertisement search.
-- **loading**: Indicates whether data is currently being fetched.
-- **options**: Stores the available advertisement options fetched from an API.
-- **advertisementCategory**: Holds the category of the selected advertisement.
-- **length** and **width**: Manage the dimensions of the advertisement.
-- **applicationFee**: Stores the application fee for the selected advertisement.
-- **firstThreeMetres**, **firstSquareMetres**, **firstTenSquareMetres**, **extraSquareMetres**: Hold different fee values based on advertisement type and dimensions.
-- **licenceFee** and **licenceFeeN**: Manage the licence fee for renewal and new applicants, respectively.
-- **perEachperYear**: Stores the fee per year for certain advertisement types.
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Backend API base URL |
+| `VITE_SITE_URL` | Public URL of this site, used in PDF QR codes |
+| `VITE_NAIROBI_PAY_URL` | NairobiPay portal link |
+| `VITE_FINANCE_ACT_URL` | Finance Act download link |
 
-#### SideBar Component
+These values are compiled into the JavaScript bundle, so never put secrets in them.
 
-The `SideBar` component is imported and used within the `SearchAdvert` component for  navigation.
+## Scripts
 
-#### React Router
+```bash
+npm run dev       # dev server
+npm test          # unit tests (fee calculations, cache)
+npm run lint      # ESLint, zero warnings allowed
+npm run build     # production build -> dist/
+npm run preview   # serve dist/
+```
 
-The `useLocation` hook from `react-router-dom` is used to access the current location and query parameters.
+## Deployment
 
-#### Select Component
+- **Vercel**: builds from the repo (`vercel.json` handles SPA rewrites).
+- **Firebase Hosting** (project `ubpmadeeasypremier`):
 
-The `Select` component from `react-select` library is used to render a dropdown menu for selecting advertisement types. Custom styling is applied to enhance the UI.
-
-#### useEffect Hooks
-
-- **Fetch Options**: Fetches the available advertisement options from an API when the component mounts.
-- **Fetch Data**: Fetches advertisement data based on user input. Uses debouncing to optimize API calls.
-- **Calculate Licence Fee**: Calculates the licence fee based on the selected advertisement type and dimensions. Updates whenever there is a change in relevant state variables.
-
-#### Rendering
-
-The component renders a responsive layout with input fields for advertisement dimensions and displays various fee-related information based on user input. It also provides feedback on loading state during data fetching.
-
-## Setup Instructions
-
-1. Clone the repository to your local machine using the following command:
-
-    ```bash
-    git clone https://github.com/ubpmadeeasy/ubpmadeeasy.git
-    ```
-
-2. Navigate to the project directory:
-
-    ```bash
-    cd ubpmadeeasy
-    ```
-
-3. Install dependencies:
-
-    ```bash
-    npm install
-    ```
-
-4. Start the development server:
-
-    ```bash
-    npm run dev
-    ```
-
-5. Open your browser and visit `http://localhost:5173` to view the application.
+  ```bash
+  npm run build
+  npx firebase deploy                                   # production
+  npx firebase hosting:channel:deploy ubppreview        # preview channel
+  ```
 
 ## Contributing
 
-Contributions are welcome! If you'd like to contribute to this project, feel free to fork the repository, make your changes, and submit a pull request.
-
-## Firebase
-
-npm install -g firebase-tools
-npm run build
-firebase deploy
-firebase hosting:channel:deploy ubppreview
-
-
-## Acknowledgements
-
-Special thanks to the developers and contributors of the libraries and tools used in this project.
+Fork, branch, and open a pull request. Please run `npm test` and `npm run lint` first.

@@ -1,9 +1,7 @@
-import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import UBPHome from "./components/UBPHome";
-// import FinanceAct from "./components/FinanceAct";
 import AdvertFormat from "./components/AdvertFormat";
 import Guide from "./components/Guide";
 import FAQS from "./components/FAQs";
@@ -12,19 +10,20 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import CombinedSearch from "./components/CombinedSearch";
 import UBPAgent from "./components/UBPAgent";
 import UBPTutorial from "./components/UBPTutorial";
+import { FINANCE_ACT_URL, NAIROBI_PAY_URL } from "./config";
 
-const exceptionLinks = [
-  "https://nairobi.go.ke/download/the-nairobi-city-county-finance-act2023/",
-  "https://www.nairobiservices.go.ke/",
-];
+// Old in-app paths that should forward to these external sites.
+const exceptionLinks = [FINANCE_ACT_URL, NAIROBI_PAY_URL];
 
 const RedirectHandler = () => {
   const location = useLocation();
 
-  // Check if the current path matches an exception
-  const matchingException = exceptionLinks.find((link) =>
-    location.pathname.includes(new URL(link).pathname)
-  );
+  // Check if the current path matches an exception. Ignore links whose path is
+  // just "/" - every path contains it, which would redirect all unknown routes.
+  const matchingException = exceptionLinks.find((link) => {
+    const linkPath = new URL(link).pathname.replace(/\/+$/, "");
+    return linkPath !== "" && location.pathname.startsWith(linkPath);
+  });
 
   if (matchingException) {
     window.location.href = matchingException;
@@ -45,7 +44,6 @@ const App = () => {
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
-          {/* <Route path="/financeact" element={<FinanceAct />} /> */}
           <Route path="/faqs" element={<FAQS />} />
           <Route path="/ubp" element={<CombinedSearch />} />
           <Route path="/advert" element={<AdvertFormat />} />

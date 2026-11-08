@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FiSend, FiMic, FiPlus, FiTrash, FiMenu } from "react-icons/fi";
 import { GiSpeaker } from "react-icons/gi";
@@ -6,40 +6,11 @@ import { Helmet } from "react-helmet";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import QRCode from "qrcode";
-
-// Helper function to normalize words (e.g., "watches" -> "watch")
-const normalizeWord = (word) => {
-  // Convert to lowercase for consistent comparison
-  word = word.toLowerCase();
-
-  // Handle exceptions explicitly
-  const exceptions = {
-    barbershop: "barbershop", // Ensure "barbershop" stays as "barbershop"
-    bars: "bars", // Ensure "bars" stays as "bars"
-  };
-
-  if (exceptions[word]) return exceptions[word];
-
-  // General pluralization rules
-  if (word.endsWith("ies")) {
-    return word.slice(0, -3) + "y"; // Convert "butcheries" -> "butchery"
-  } else if (
-    word.endsWith("es") &&
-    !word.endsWith("ss") &&
-    !word.endsWith("us")
-  ) {
-    return word.slice(0, -2); // Convert "watches" -> "watch", "boxes" -> "box"
-  } else if (
-    word.endsWith("s") &&
-    word.length > 1 &&
-    !word.endsWith("ss") &&
-    !word.endsWith("rs") // Prevents "bars" from becoming "bar"
-  ) {
-    return word.slice(0, -1); // Convert "cars" -> "car"
-  }
-
-  return word; // Return the word as is if no rules apply
-};
+import { calculateAdvertFees, matchNumberRange, SIDE_ADVERT_TYPES } from "../lib/fees";
+import { api, API_ERROR_MESSAGE } from "../lib/api";
+import { readCache, writeCache } from "../lib/cache";
+import { SITE_URL } from "../config";
+import ErrorBanner from "./ErrorBanner";
 
 // Convert words to numbers (e.g., "twenty-five" → 25)
 const numberWords = {
@@ -128,27 +99,27 @@ const UBPAgent = () => {
   const [currentSession, setCurrentSession] = useState(
     localStorage.getItem("ubpai_currentSession") || "Chat 1"
   );
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [, setIsSpeaking] = useState(false);
   const [typing, setTyping] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [businessData, setBusinessData] = useState(
-    JSON.parse(localStorage.getItem("ubpai_businessData")) || []
+    () => readCache("naics:all") || []
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // For mobile sidebar toggle
-  const [pdfUrl, setPdfUrl] = useState(null);
+  const [, setPdfUrl] = useState(null);
+  const [apiError, setApiError] = useState(null);
 
   // Fetch advert types once (on mount)
   const [advertTypes, setAdvertTypes] = useState([]);
   useEffect(() => {
-    fetch('https://effortlessubp-backend.onrender.com/api/advert')
-      .then(res => res.json())
-      .then(data => setAdvertTypes(data.map(item => item.advertType)));
+    api
+      .adverts()
+      .then((data) => setAdvertTypes(data.map((item) => item.advertType)))
+      .catch((err) => {
+        console.error(err);
+        setApiError(API_ERROR_MESSAGE);
+      });
   }, []);
-
-  // Move sideAdvertTypes here for global access in the component
-  const sideAdvertTypes = [
-    "Above Canopy", "Under Canopy", "Directional Signs", "Billboard", "Call In Adverts"
-  ];
 
   const chatContainerRef = useRef(null);
 
@@ -170,21 +141,19 @@ const UBPAgent = () => {
     localStorage.setItem("ubpai_currentSession", currentSession);
   }, [currentSession]);
 
-  // Fetch business data (unchanged)
+  // Fetch the full business dataset (cached for a day)
   useEffect(() => {
     if (!businessData.length) {
-      fetch("https://effortlessubp-backend.onrender.com/api/naics/")
-        .then((res) => res.json())
+      api
+        .allActivities()
         .then((data) => {
           setBusinessData(data);
-          localStorage.setItem("ubpai_businessData", JSON.stringify(data));
+          writeCache("naics:all", data);
         })
-        .catch((err) =>
-          console.error(
-            "Sorry, I did not understand you. Please try again",
-            err
-          )
-        );
+        .catch((err) => {
+          console.error(err);
+          setApiError(API_ERROR_MESSAGE);
+        });
     }
   }, [businessData.length]);
 
@@ -209,14 +178,10 @@ const UBPAgent = () => {
       ],
     }));
 
-      // Detect if prompt contains both business and advert info
-      const businessKeywords = [
-        "business", "mpesa", "shop", "outlet", "employee", "butchery", "barbershop", "betting", "kinyozi"
-      ];
+      // Detect if the prompt mentions an advert
       const advertKeywords = [
         "advert", "billboard", "canopy", "sign", "banner", "painting", "branding", "flag", "window", "wall"
       ];
-      const hasBusiness = businessKeywords.some((kw) => inputPrompt.toLowerCase().includes(kw));
       const hasAdvert = advertKeywords.some((kw) => inputPrompt.toLowerCase().includes(kw));
 
       let businessResult = null;
@@ -267,22 +232,19 @@ const UBPAgent = () => {
           : null;
         if (bestMatch) {
     try {
-      const response = await fetch(
-              `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${encodeURIComponent(bestMatch.businessActivity)}`
-            );
-            businessDetails = await response.json();
-
-            // Fetch the message/description for each field
-            const [industryMsg, businessCategoryMsg, businessSubCategoryMsg, businessActivityMsg] = await Promise.all([
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/industry/${encodeURIComponent(bestMatch.industry)}`).then(res => res.json()).then(data => data.industry),
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesscategories/${encodeURIComponent(bestMatch.businessCategory)}`).then(res => res.json()).then(data => data.businessCategory),
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businesssubcategories/${encodeURIComponent(bestMatch.businessSubCategory)}`).then(res => res.json()).then(data => data.businessSubCategory),
-              fetch(`https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${encodeURIComponent(bestMatch.businessActivity)}`).then(res => res.json()).then(data => data.businessActivity),
-            ]);
-            industryMessage = industryMsg;
-            businessCategoryMessage = businessCategoryMsg;
-            businessSubCategoryMessage = businessSubCategoryMsg;
-            businessActivityMessage = businessActivityMsg;
+            // Fee rows plus the description for each classification level
+            const [activityResponse, industryResponse, categoryResponse, subCategoryResponse] =
+              await Promise.all([
+                api.businessActivity(bestMatch.businessActivity),
+                api.industry(bestMatch.industry),
+                api.businessCategory(bestMatch.businessCategory),
+                api.businessSubCategory(bestMatch.businessSubCategory),
+              ]);
+            businessDetails = activityResponse;
+            industryMessage = industryResponse.industry;
+            businessCategoryMessage = categoryResponse.businessCategory;
+            businessSubCategoryMessage = subCategoryResponse.businessSubCategory;
+            businessActivityMessage = activityResponse.businessActivity;
 
       // Step 2: Extract numbers (outlets/employees)
             requestedNumbers = extractNumbers(inputPrompt);
@@ -411,95 +373,17 @@ const UBPAgent = () => {
             numberOfSides = parseInt(sidesMatch[1]);
           }
           try {
-            const response = await fetch(
-              `https://effortlessubp-backend.onrender.com/api/advert/${encodeURIComponent(foundAdvertType)}`
-            );
-            const advertDetails = await response.json();
-            // Compute all fees as in CombinedSearch
+            const advertDetails = await api.advert(foundAdvertType);
             const applicationFee = Number(advertDetails.applicationFee) || 0;
             const firstThreeMetres = Number(advertDetails.firstThreeMetres) || 0;
             const firstSquareMetres = Number(advertDetails.firstSquareMetres) || 0;
             const firstTenSquareMetres = Number(advertDetails.firstTenSquareMetres) || 0;
             const extraSquareMetres = Number(advertDetails.extraSquareMetres) || 0;
-            const perEachperYear = Number(advertDetails.perEachperYear) || 0;
-            let renewalFee = 0;
-            let newApplicantFee = 0;
-            const advertDimension = length * width;
-            if (foundAdvertType === "Directional Signs") {
-              renewalFee = 10500;
-              // newApplicantFee = 10500;
-              newApplicantFee = renewalFee + applicationFee;
-            } else if (foundAdvertType === "Billboard") {
-              if (advertDimension < 3) {
-                renewalFee = 0;
-                newApplicantFee = 0;
-              } else if (advertDimension > 3) {
-                renewalFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-                // newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              } else {
-                renewalFee = firstThreeMetres;
-                // newApplicantFee = firstThreeMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              }
-            } else if (foundAdvertType === "Corporate Flags") {
-              renewalFee = perEachperYear;
-              // newApplicantFee = perEachperYear;
-              newApplicantFee = renewalFee + applicationFee;
-            } else if (foundAdvertType === "Canvas") {
-              renewalFee = firstSquareMetres;
-              // newApplicantFee = firstSquareMetres;
-              newApplicantFee = renewalFee + applicationFee;
-            } else if (foundAdvertType === "Business Encroachment") {
-              if (advertDimension === 1) {
-                renewalFee = firstSquareMetres;
-                // newApplicantFee = firstSquareMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              } else {
-                renewalFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-                // newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              }
-            } else if (foundAdvertType === "Call In Adverts") {
-              renewalFee = 18200;
-              // newApplicantFee = 18200;
-              newApplicantFee = renewalFee + applicationFee;
-            } else if (
-              foundAdvertType === "Wallpainting" ||
-              foundAdvertType === "Window Branding" ||
-              foundAdvertType === "Wall Branding"
-            ) {
-              if (advertDimension < 10) {
-                renewalFee = 0;
-                newApplicantFee = 0;
-              } else if (advertDimension === 10) {
-                renewalFee = firstTenSquareMetres;
-                // newApplicantFee = firstTenSquareMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              } else {
-                renewalFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-                // newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              }
-            } else {
-              if (advertDimension === 1) {
-                renewalFee = firstSquareMetres;
-                // newApplicantFee = firstSquareMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              } else if (advertDimension > 1) {
-                renewalFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-                // newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-                newApplicantFee = renewalFee + applicationFee;
-              }
-            }
-            // Add application fee to new applicant fee
-            // newApplicantFee += applicationFee;
-            // Multiply by number of sides if needed
-            if (sideAdvertTypes.includes(foundAdvertType)) {
-              renewalFee = (parseFloat(renewalFee) || 0) * (numberOfSides || 1);
-              // newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
-              newApplicantFee = renewalFee + applicationFee;
-            }
+            const { renewalFee, newApplicantFee } = calculateAdvertFees(
+              foundAdvertType,
+              advertDetails,
+              { length, width, numberOfSides }
+            );
            
             // Format for display
             const formatCurrency = (amount) =>
@@ -568,7 +452,7 @@ const UBPAgent = () => {
             ...((advertResult.length !== 1 || advertResult.width !== 1)
               ? [["Dimensions", `${advertResult.length}m x ${advertResult.width}m`]]
               : []),
-            ...(sideAdvertTypes.includes(advertResult.foundAdvertType)
+            ...(SIDE_ADVERT_TYPES.includes(advertResult.foundAdvertType)
               ? [["Number of Sides", advertResult.numberOfSides]]
               : []),
             ["Application Fee", advertResult.applicationFee],
@@ -618,7 +502,7 @@ const UBPAgent = () => {
               ? [["Dimensions (Length × Width)", `${advertResult.length} m × ${advertResult.width} m`]]
               : []),
             // Always show number of sides for side-based types
-            ...(sideAdvertTypes.includes(advertResult.foundAdvertType)
+            ...(SIDE_ADVERT_TYPES.includes(advertResult.foundAdvertType)
               ? [["Number of Sides", advertResult.numberOfSides]]
               : []),
             ["First m²", advertResult.firstSquareMetres],
@@ -659,7 +543,7 @@ const UBPAgent = () => {
             },
           });
           // QR code
-          const qrCodeURL = `https://ubpeasy.vercel.app/ubp?advert=${encodeURIComponent(advertResult.foundAdvertType)}`;
+          const qrCodeURL = `${SITE_URL}/ubp?advert=${encodeURIComponent(advertResult.foundAdvertType)}`;
           const qrCodeDataUrl = await QRCode.toDataURL(qrCodeURL, { width: 80 });
           const qrCodeX = pdf.internal.pageSize.getWidth() - 100;
           const qrCodeY = pdf.internal.pageSize.getHeight() - 100;
@@ -775,53 +659,6 @@ const UBPAgent = () => {
               "Pest Control",
               "Total (KES)",
             ];
-            // Filtering logic like CombinedSearch.jsx
-            const matchNumberRange = (description, input) => {
-              const cleanedDescription = description.toLowerCase().trim();
-              const rangeMatch = cleanedDescription.match(
-                /\b(?:from\s+)?(\d+)\s*[-–—]{1,2}\s*(\d+)\s*(?:sq\.?\s*m|m²)?\b/
-              );
-              if (rangeMatch) {
-                const lowerBound = parseInt(rangeMatch[1], 10);
-                const upperBound = parseInt(rangeMatch[2], 10);
-                return input >= lowerBound && input <= upperBound;
-              }
-              const upToMatch = cleanedDescription.match(/\b(up to|upto)\s+(\d+)/);
-              if (upToMatch) {
-                const upperBound = parseInt(upToMatch[2], 10);
-                return input >= 1 && input <= upperBound;
-              }
-              const aboveMatch = cleanedDescription.match(/\babove\s+(\d+)/);
-              if (aboveMatch) {
-                const lowerBound = parseInt(aboveMatch[1], 10);
-                return input > lowerBound;
-              }
-              const lessThanMatch = cleanedDescription.match(/\bless\s+than\s+(\d+)/i);
-              if (lessThanMatch) {
-                const upperBound = parseInt(lessThanMatch[1], 10);
-                return input >= 1 && input < upperBound;
-              }
-              const toMatch = cleanedDescription.match(/\bto\s+(\d+)/);
-              if (toMatch) {
-                const upperBound = parseInt(toMatch[1], 10);
-                return input >= 2 && input <= upperBound;
-              }
-              const vehicleMatch = cleanedDescription.match(
-                /(?:with|without)\s+(\d+)\s+vehicle/
-              );
-              if (vehicleMatch) {
-                const vehicleCount = parseInt(vehicleMatch[1], 10);
-                if (input === vehicleCount) {
-                  return true;
-                }
-              }
-              const overMatch = cleanedDescription.match(/\bover\s+(\d+)/);
-              if (overMatch) {
-                const lowerBound = parseInt(overMatch[1], 10);
-                return input > lowerBound;
-              }
-              return false;
-            };
             let filteredRows = businessDetails.financeActs;
             if (filterValue) {
               const inputNumber = parseInt(filterValue);
@@ -913,7 +750,7 @@ const UBPAgent = () => {
             pdf.text(`Licence Fee (New Applicant): ${advertResult.licenceFeeN}`, 40, currentY); currentY += 20;
           }
           // QR code
-          const qrText = "https://ubpeasy.vercel.app/";
+          const qrText = `${SITE_URL}/`;
           const qrCodeDataUrl = await QRCode.toDataURL(qrText, { width: 80 });
           pdf.addImage(qrCodeDataUrl, "PNG", pageWidth - 100, pdf.internal.pageSize.getHeight() - 100, 80, 80);
         }
@@ -1149,6 +986,7 @@ const UBPAgent = () => {
             ref={chatContainerRef}
             className="flex-1 p-4 overflow-y-auto space-y-4 bg-white dark:bg-[var(--color-surface)]"
           >
+            <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />
             {sessions[currentSession]?.map((message, index) => (
               <motion.div
                 key={index}

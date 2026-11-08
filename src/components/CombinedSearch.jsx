@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { RefreshCw } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import Select from "react-select";
 import "jspdf-autotable";
-import axios from "axios";
+import { calculateAdvertFees, matchNumberRange, SIDE_ADVERT_TYPES } from "../lib/fees";
+import { api, API_ERROR_MESSAGE } from "../lib/api";
+import { readCache, writeCache } from "../lib/cache";
+import { SITE_URL } from "../config";
+import ErrorBanner from "./ErrorBanner";
+
+const SEARCH_DEBOUNCE_MS = 500;
 
 function CombinedSearch() {
   // Tab state
@@ -14,12 +19,16 @@ function CombinedSearch() {
 
   // Common states
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploadMessage, setUploadMessage] = useState(null);
-  const apiUrl = "https://effortlessubp-backend.onrender.com";
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const [data, setData] = useState(null);
+
+  const reportApiError = (error) => {
+    console.error(error);
+    setApiError(API_ERROR_MESSAGE);
+  };
 
   // Business search states
   const [searchInput, setSearchInput] = useState("");
@@ -35,7 +44,6 @@ function CombinedSearch() {
   const [businessOptions, setBusinessOptions] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [filterValue, setFilterValue] = useState("");
-  const [selectedRow, setSelectedRow] = useState(null);
   const [labelText, setLabelText] = useState("");
   const ubp = searchParams.get("ubp");
 
@@ -46,13 +54,6 @@ function CombinedSearch() {
   const [length, setLength] = useState(1);
   const [width, setWidth] = useState(1);
   const [numberOfSides, setNumberOfSides] = useState(1); // NEW STATE
-  const sideAdvertTypes = [
-    "Above Canopy",
-    "Under Canopy",
-    "Directional Signs",
-    "Billboard",
-    "Call In Adverts"
-  ];
   const [applicationFee, setApplicationFee] = useState("");
   const [firstThreeMetres, setFirstThreeMetres] = useState("");
   const [firstSquareMetres, setFirstSquareMetres] = useState("");
@@ -118,16 +119,11 @@ function CombinedSearch() {
     }
   }, [tableData]);
 
-  const getCachedResults = (query) => {
-    const cachedData = localStorage.getItem(query);
-    if (cachedData) {
-      return JSON.parse(cachedData);
-    }
-    return null;
-  };
-
-  const cacheResults = (query, data) => {
-    localStorage.setItem(query, JSON.stringify(data));
+  const applyActivityCodes = (codes) => {
+    setIndustry(codes.industry);
+    setBusinessCategory(codes.businessCategory);
+    setBusinessSubCategory(codes.businessSubCategory);
+    setBusinessActivity(codes.businessActivity);
   };
 
   useEffect(() => {
@@ -137,13 +133,6 @@ function CombinedSearch() {
         { value: ubp, label: ubp },
       ]);
     }
-    const cachedData = getCachedResults(ubp);
-    if (cachedData) {
-      setIndustry(cachedData.industry);
-      setBusinessCategory(cachedData.businessCategory);
-      setBusinessSubCategory(cachedData.businessSubCategory);
-      setBusinessActivity(cachedData.businessActivity);
-    }
   }, [ubp, businessOptions]);
 
   useEffect(() => {
@@ -152,192 +141,114 @@ function CombinedSearch() {
     }
   }, [ubp]);
 
+  // Activity name -> classification codes (debounced, cached for a day).
   useEffect(() => {
-    const debounce = (func, delay) => {
-      let timeoutId;
-      return (...args) => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        timeoutId = setTimeout(() => {
-          func(...args);
-        }, delay);
-      };
-    };
-
-    const fetchData = async (query) => {
+    if (searchInput === "") {
+      clearFields();
+      return;
+    }
+    const cached = readCache(`lookup:${searchInput}`);
+    if (cached) {
+      applyActivityCodes(cached);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       try {
         setLoading(true);
-        const cachedData = getCachedResults(query);
-        if (cachedData) {
-          setIndustry(cachedData.industry);
-          setBusinessCategory(cachedData.businessCategory);
-          setBusinessSubCategory(cachedData.businessSubCategory);
-          setBusinessActivity(cachedData.businessActivity);
-          setLoading(false);
-          return;
-        }
-        const response = await fetch(
-          `https://effortlessubp-backend.onrender.com/api/naics/${encodeURIComponent(
-            query
-          )}`
-        );
-        if (!response.ok) {
-          throw new Error(" ");
-        }
-        const data = await response.json();
-        setIndustry(data.industry);
-        setBusinessCategory(data.businessCategory);
-        setBusinessSubCategory(data.businessSubCategory);
-        setBusinessActivity(data.businessActivity);
-        cacheResults(query, data);
+        const codes = await api.lookupActivity(searchInput);
+        if (cancelled) return;
+        applyActivityCodes(codes);
+        writeCache(`lookup:${searchInput}`, codes);
+        setApiError(null);
       } catch (error) {
-        console.log("Something went wrong!");
+        if (!cancelled) reportApiError(error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
     };
-
-    const debouncedFetchData = debounce(fetchData, 500);
-
-    if (searchInput !== "") {
-      debouncedFetchData(searchInput);
-    } else {
-      clearFields();
-    }
   }, [searchInput]);
 
-  useEffect(() => {
-    if (industry !== "") {
-      fetchDataByIndustry();
-    } else {
+  // Resolve a classification code to its human-readable description.
+  // Returns an effect cleanup that ignores responses for an outdated code.
+  const loadDescription = (code, fetcher, onResult) => {
+    if (code === "") {
       clearFields();
+      return undefined;
     }
-  }, [industry]);
-
-  useEffect(() => {
-    if (businessCategory !== "") {
-      fetchDataByBusinessCategory();
-    } else {
-      clearFields();
-    }
-  }, [businessCategory]);
-
-  useEffect(() => {
-    if (businessSubCategory !== "") {
-      fetchDataByBusinessSubCategory();
-    } else {
-      clearFields();
-    }
-  }, [businessSubCategory]);
-
-  useEffect(() => {
-    if (businessActivity !== "") {
-      fetchDataByBusinessActivity();
-    } else {
-      clearFields();
-    }
-  }, [businessActivity]);
-
-  const fetchDataByIndustry = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `https://effortlessubp-backend.onrender.com/api/naics/industry/${industry}`
-      );
-      const industryResponse = await response.json();
-      setIndustryMessage(industryResponse.industry);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
+    let cancelled = false;
+    setLoading(true);
+    fetcher(code)
+      .then((response) => !cancelled && onResult(response))
+      .catch((error) => !cancelled && reportApiError(error))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   };
 
-  const fetchDataByBusinessCategory = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `https://effortlessubp-backend.onrender.com/api/naics/businesscategories/${businessCategory}`
-      );
-      const businessCategoryResponse = await response.json();
-      setBusinessCategoryMessage(businessCategoryResponse.businessCategory);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDataByBusinessSubCategory = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `https://effortlessubp-backend.onrender.com/api/naics/businesssubcategories/${businessSubCategory}`
-      );
-      const businessSubCategoryResponse = await response.json();
-      setBusinessSubCategoryMessage(
-        businessSubCategoryResponse.businessSubCategory
-      );
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDataByBusinessActivity = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${businessActivity}`
-      );
-      const businessActivityResponse = await response.json();
-      setBusinessActivityMessage(businessActivityResponse.businessActivity);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(
+    () => loadDescription(industry, api.industry, (r) => setIndustryMessage(r.industry)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the code changes
+    [industry]
+  );
+  useEffect(
+    () =>
+      loadDescription(businessCategory, api.businessCategory, (r) =>
+        setBusinessCategoryMessage(r.businessCategory)
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the code changes
+    [businessCategory]
+  );
+  useEffect(
+    () =>
+      loadDescription(businessSubCategory, api.businessSubCategory, (r) =>
+        setBusinessSubCategoryMessage(r.businessSubCategory)
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the code changes
+    [businessSubCategory]
+  );
+  // One request gives both the description and the Finance Act fee rows.
+  useEffect(
+    () =>
+      loadDescription(businessActivity, api.businessActivity, (r) => {
+        setBusinessActivityMessage(r.businessActivity);
+        setTableData(r);
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the code changes
+    [businessActivity]
+  );
 
   useEffect(() => {
-    const fetchDataByOptions = async () => {
+    const loadBusinessOptions = async () => {
+      const cached = readCache("businessOptions");
+      if (cached) {
+        setBusinessOptions(cached);
+        return;
+      }
       try {
         setLoading(true);
-
-        const cachedOptions = localStorage.getItem("businessOptions");
-        if (cachedOptions) {
-          setBusinessOptions(JSON.parse(cachedOptions));
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(
-          "https://effortlessubp-backend.onrender.com/api/naics/ubpdictionary"
-        );
-        const optionsData = await response.json();
-
-        const fetchedOptions = optionsData.map((item) => ({
-          value: item.commonBusinessActivity,
-          label: item.commonBusinessActivity,
-        }));
-
-        fetchedOptions.sort((a, b) => {
-          return a.label.localeCompare(b.label);
-        });
-
-        localStorage.setItem("businessOptions", JSON.stringify(fetchedOptions));
-
+        const optionsData = await api.ubpDictionary();
+        const fetchedOptions = optionsData
+          .map((item) => ({
+            value: item.commonBusinessActivity,
+            label: item.commonBusinessActivity,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        writeCache("businessOptions", fetchedOptions);
         setBusinessOptions(fetchedOptions);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        reportApiError(error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDataByOptions();
+    loadBusinessOptions();
   }, []);
 
   const clearFields = () => {
@@ -348,80 +259,7 @@ function CombinedSearch() {
     setBusinessCategoryMessage("");
     setBusinessSubCategoryMessage("");
     setBusinessActivityMessage("");
-  };
-
-  const fetchTableData = async () => {
-    try {
-      const response = await fetch(
-        `https://effortlessubp-backend.onrender.com/api/naics/businessactivities/${businessActivity}`
-      );
-      if (!response.ok) {
-        throw new Error("Unable to fetch table data");
-      }
-      const data = await response.json();
-      setTableData(data);
-    } catch (error) {
-      console.error("Error fetching table data:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchTableData();
-  }, [businessActivity]);
-
-  const matchNumberRange = (description, input) => {
-    const cleanedDescription = description.toLowerCase().trim();
-
-    const rangeMatch = cleanedDescription.match(
-      /\b(?:from\s+)?(\d+)\s*[-–—]{1,2}\s*(\d+)\s*(?:sq\.?\s*m|m²)?\b/
-    );
-    if (rangeMatch) {
-      const lowerBound = parseInt(rangeMatch[1], 10);
-      const upperBound = parseInt(rangeMatch[2], 10);
-      return input >= lowerBound && input <= upperBound;
-    }
-
-    const upToMatch = cleanedDescription.match(/\b(up to|upto)\s+(\d+)/);
-    if (upToMatch) {
-      const upperBound = parseInt(upToMatch[2], 10);
-      return input >= 1 && input <= upperBound;
-    }
-
-    const aboveMatch = cleanedDescription.match(/\babove\s+(\d+)/);
-    if (aboveMatch) {
-      const lowerBound = parseInt(aboveMatch[1], 10);
-      return input > lowerBound;
-    }
-
-    const lessThanMatch = cleanedDescription.match(/\bless\s+than\s+(\d+)/i);
-    if (lessThanMatch) {
-      const upperBound = parseInt(lessThanMatch[1], 10);
-      return input >= 1 && input < upperBound;
-    }
-
-    const toMatch = cleanedDescription.match(/\bto\s+(\d+)/);
-    if (toMatch) {
-      const upperBound = parseInt(toMatch[1], 10);
-      return input >= 2 && input <= upperBound;
-    }
-
-    const vehicleMatch = cleanedDescription.match(
-      /(?:with|without)\s+(\d+)\s+vehicle/
-    );
-    if (vehicleMatch) {
-      const vehicleCount = parseInt(vehicleMatch[1], 10);
-      if (input === vehicleCount) {
-        return true;
-      }
-    }
-
-    const overMatch = cleanedDescription.match(/\bover\s+(\d+)/);
-    if (overMatch) {
-      const lowerBound = parseInt(overMatch[1], 10);
-      return input > lowerBound;
-    }
-
-    return false;
+    setTableData([]);
   };
 
   // Advertisement search functions
@@ -473,50 +311,9 @@ function CombinedSearch() {
     }
   }, [advert]);
 
+  // Advert type -> rates (debounced).
   useEffect(() => {
-    const debounce = (func, delay) => {
-      let timeoutId;
-      return (...args) => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        timeoutId = setTimeout(() => {
-          func(...args);
-        }, delay);
-      };
-    };
-
-    const fetchData = async (query) => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `https://effortlessubp-backend.onrender.com/api/advert/${encodeURIComponent(
-            query
-          )}`
-        );
-        if (!response.ok) {
-          throw new Error(" ");
-        }
-        const data = await response.json();
-        setAdvertisementCategory(data.advertisementCategory);
-        setApplicationFee(data.applicationFee);
-        setFirstThreeMetres(data.firstThreeMetres);
-        setFirstSquareMetres(data.firstSquareMetres);
-        setFirstTenSquareMetres(data.firstTenSquareMetres);
-        setExtraSquareMetres(data.extraSquareMetres);
-        setPerEachperYear(data.perEachperYear);
-      } catch (error) {
-        console.log("Something went wrong!");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const debouncedFetchData = debounce(fetchData, 500);
-
-    if (advertSearchInput !== "") {
-      debouncedFetchData(advertSearchInput);
-    } else {
+    if (advertSearchInput === "") {
       setAdvertisementCategory("");
       setApplicationFee("");
       setFirstThreeMetres("");
@@ -526,140 +323,73 @@ function CombinedSearch() {
       setPerEachperYear("");
       setLicenceFee("");
       setLicenceFeeN("");
+      return;
     }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        const data = await api.advert(advertSearchInput);
+        if (cancelled) return;
+        setAdvertisementCategory(data.advertisementCategory);
+        setApplicationFee(data.applicationFee);
+        setFirstThreeMetres(data.firstThreeMetres);
+        setFirstSquareMetres(data.firstSquareMetres);
+        setFirstTenSquareMetres(data.firstTenSquareMetres);
+        setExtraSquareMetres(data.extraSquareMetres);
+        setPerEachperYear(data.perEachperYear);
+        setApiError(null);
+      } catch (error) {
+        if (!cancelled) reportApiError(error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [advertSearchInput]);
 
   useEffect(() => {
-    const fetchDataByOptions = async () => {
+    const loadAdvertOptions = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          "https://effortlessubp-backend.onrender.com/api/advert"
-        );
-        const optionsData = await response.json();
-
-        const fetchedOptions = optionsData.map((item) => ({
-          value: item.advertType,
-          label: item.advertType,
-        }));
-
-        fetchedOptions.sort((a, b) => {
-          return a.label.localeCompare(b.label);
-        });
-
+        const optionsData = await api.adverts();
+        const fetchedOptions = optionsData
+          .map((item) => ({ value: item.advertType, label: item.advertType }))
+          .sort((a, b) => a.label.localeCompare(b.label));
         setAdvertOptions(fetchedOptions);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        reportApiError(error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDataByOptions();
+    loadAdvertOptions();
   }, []);
 
   useEffect(() => {
-    const advertDimension = length * width;
-
-    // Calculate Renewal Fee (licenceFee)
-    let renewalFee = 0;
-    if (advertSearchInput === "Directional Signs") {
-      renewalFee = 10500;
-    } else if (advertSearchInput === "Billboard") {
-      if (advertDimension < 3) {
-        renewalFee = 0;
-      } else if (advertDimension > 3) {
-        renewalFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-      } else {
-        renewalFee = firstThreeMetres;
-      }
-    } else if (advertSearchInput === "Corporate Flags") {
-      renewalFee = perEachperYear;
-    } else if (advertSearchInput === "Canvas") {
-      renewalFee = firstSquareMetres;
-    } else if (advertSearchInput === "Business Encroachment") {
-      if (advertDimension === 1) {
-        renewalFee = firstSquareMetres;
-      } else {
-        renewalFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-      }
-    } else if (advertSearchInput === "Call In Adverts") {
-      renewalFee = 18200;
-    } else if (
-      advertSearchInput === "Wallpainting" ||
-      advertSearchInput === "Window Branding" ||
-      advertSearchInput === "Wall Branding"
-    ) {
-      if (advertDimension < 10) {
-        renewalFee = 0;
-      } else if (advertDimension === 10) {
-        renewalFee = firstTenSquareMetres;
-      } else {
-        renewalFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-      }
-    } else {
-      if (advertDimension === 1) {
-        renewalFee = firstSquareMetres;
-      } else if (advertDimension > 1) {
-        renewalFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-      }
+    if (!advertSearchInput) {
+      setLicenceFee("");
+      setLicenceFeeN("");
+      return;
     }
-    if (sideAdvertTypes.includes(advertSearchInput)) {
-      renewalFee = (parseFloat(renewalFee) || 0) * (numberOfSides || 1);
-    }
+    const { renewalFee, newApplicantFee } = calculateAdvertFees(
+      advertSearchInput,
+      {
+        applicationFee,
+        firstSquareMetres,
+        firstThreeMetres,
+        firstTenSquareMetres,
+        extraSquareMetres,
+        perEachperYear,
+      },
+      { length, width, numberOfSides }
+    );
     setLicenceFee(renewalFee);
-
-    // Calculate New Applicant Fee (licenceFeeN)
-    // let newApplicantFee = 0;
-    // if (advertSearchInput === "Directional Signs") {
-    //   newApplicantFee = 10500;
-    // } else if (advertSearchInput === "Billboard") {
-    //   if (advertDimension < 3) {
-    //     newApplicantFee = 0;
-    //   } else if (advertDimension > 3) {
-    //     newApplicantFee = (advertDimension - 3) * extraSquareMetres + firstThreeMetres;
-    //   } else {
-    //     newApplicantFee = firstThreeMetres;
-    //   }
-    // } else if (advertSearchInput === "Corporate Flags") {
-    //   newApplicantFee = perEachperYear;
-    // } else if (advertSearchInput === "Canvas") {
-    //   newApplicantFee = firstSquareMetres;
-    // } else if (advertSearchInput === "Business Encroachment") {
-    //   if (advertDimension === 1) {
-    //     newApplicantFee = firstSquareMetres;
-    //   } else {
-    //     newApplicantFee = (advertDimension - 1) * firstSquareMetres + firstSquareMetres;
-    //   }
-    // } else if (advertSearchInput === "Call In Adverts") {
-    //   newApplicantFee = 18200;
-    // } else if (
-    //   advertSearchInput === "Wallpainting" ||
-    //   advertSearchInput === "Window Branding" ||
-    //   advertSearchInput === "Wall Branding"
-    // ) {
-    //   if (advertDimension < 10) {
-    //     newApplicantFee = 0;
-    //   } else if (advertDimension === 10) {
-    //     newApplicantFee = firstTenSquareMetres;
-    //   } else {
-    //     newApplicantFee = (advertDimension - 10) * extraSquareMetres + firstTenSquareMetres;
-    //   }
-    // } else {
-    //   if (advertDimension === 1) {
-    //     newApplicantFee = firstSquareMetres;
-    //   } else if (advertDimension > 1) {
-    //     newApplicantFee = (advertDimension - 1) * extraSquareMetres + firstSquareMetres;
-    //   }
-    // }
-    // newApplicantFee += applicationFee;
-    // if (sideAdvertTypes.includes(advertSearchInput)) {
-    //   newApplicantFee = (parseFloat(newApplicantFee) || 0) * (numberOfSides || 1);
-    // }
-    // setLicenceFeeN(newApplicantFee);
-    // Calculate New Applicant Fee (licenceFeeN)
-  let newApplicantFee = renewalFee + (parseFloat(applicationFee) || 0);
-  setLicenceFeeN(newApplicantFee);
+    setLicenceFeeN(newApplicantFee);
   }, [
     advertSearchInput,
     length,
@@ -670,25 +400,13 @@ function CombinedSearch() {
     perEachperYear,
     firstTenSquareMetres,
     applicationFee,
-    numberOfSides, // Add dependency
+    numberOfSides,
   ]);
 
   // Common functions
   const closeModal = () => {
     setIsModalOpen(false);
     setUploadMessage(null);
-  };
-
-  const refreshData = async () => {
-    try {
-      await axios.get(apiUrl);
-      await axios.get(apiUrl);
-      const response = await axios.get(apiUrl);
-      setData(response.data);
-      console.log("UBPMadeEasy!");
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    }
   };
 
   // Business PDF generation
@@ -891,7 +609,7 @@ function CombinedSearch() {
       },
     });
 
-    const qrCodeURL = `https://ubpeasy.vercel.app/ubp?ubp=${encodeURIComponent(
+    const qrCodeURL = `${SITE_URL}/ubp?ubp=${encodeURIComponent(
       searchInput
     )}`;
     const qrCodeDataUrl = await QRCode.toDataURL(qrCodeURL, { width: 80 });
@@ -954,7 +672,6 @@ function CombinedSearch() {
     const topMargin = 50;
     const leftMargin = 35;
     const titleFontSize = 20;
-    const textFontSize = 12;
     const spacing = 5;
 
     doc.setFontSize(titleFontSize);
@@ -980,8 +697,8 @@ function CombinedSearch() {
       ["Advert", advertSearchInput || "N/A"],
       ["Application Fee (New Applicant)", pdfData.applicationFee],
       ["Dimensions (Length × Width)", pdfData.dimensions],
-      // Only show 'Number of Sides' for sideAdvertTypes (always, even if 1)
-      ...(sideAdvertTypes.includes(advertSearchInput)
+      // Only show 'Number of Sides' for SIDE_ADVERT_TYPES (always, even if 1)
+      ...(SIDE_ADVERT_TYPES.includes(advertSearchInput)
         ? [["Number of Sides", pdfData.numberOfSides]]
         : []),
       ["First m²", pdfData.firstSquareMetres],
@@ -1024,7 +741,7 @@ function CombinedSearch() {
       },
     });
 
-    const qrCodeURL = `https://ubpeasy.vercel.app/ubp?advert=${encodeURIComponent(
+    const qrCodeURL = `${SITE_URL}/ubp?advert=${encodeURIComponent(
       advertSearchInput
     )}`;
     const qrCodeDataUrl = await QRCode.toDataURL(qrCodeURL, { width: 80 });
@@ -1039,7 +756,7 @@ function CombinedSearch() {
 
   useEffect(() => {
     // Reset numberOfSides to 1 if advert type does not require sides
-    if (!sideAdvertTypes.includes(advertSearchInput)) {
+    if (!SIDE_ADVERT_TYPES.includes(advertSearchInput)) {
       setNumberOfSides(1);
     }
   }, [advertSearchInput]);
@@ -1064,6 +781,8 @@ function CombinedSearch() {
             id="capture"
             className="bg-white dark:bg-[var(--color-surface)] border-2 border-[#FFD700] dark:border-[var(--color-primary)] shadow-xl shadow-yellow-500/20 md:mb-2 md:w-4/5 w-11/12 md:h-auto h-auto md:mt-6 md:ml-2 p-6 rounded-2xl overflow-y-auto mb-16 transition-all duration-300"
           >
+            <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />
+
             {/* Tab Navigation */}
             <div className="flex justify-center gap-x-2 mb-8">
               <button
@@ -1270,31 +989,6 @@ function CombinedSearch() {
                               return uniqueRows;
                             }, []);
 
-                          // Calculate totals for each column
-                          const totals = filteredRows?.reduce(
-                            (acc, row) => {
-                              acc.tradeLicence += parseInt(row.tradeLicence) || 0;
-                              acc.fireClearance += parseInt(row.fireClearance) || 0;
-                              acc.foodHygiene += parseInt(row.foodHygiene) || 0;
-                              acc.healthCertificate += parseInt(row.healthCertificate) || 0;
-                              acc.pestControl += parseInt(row.pestControl) || 0;
-                              acc.total +=
-                                (parseInt(row.tradeLicence) || 0) +
-                                (parseInt(row.fireClearance) || 0) +
-                                (parseInt(row.foodHygiene) || 0) +
-                                (parseInt(row.healthCertificate) || 0) +
-                                (parseInt(row.pestControl) || 0);
-                              return acc;
-                            },
-                            {
-                              tradeLicence: 0,
-                              fireClearance: 0,
-                              foodHygiene: 0,
-                              healthCertificate: 0,
-                              pestControl: 0,
-                              total: 0,
-                            }
-                          );
 
                           return (
                             <>
@@ -1717,7 +1411,7 @@ function CombinedSearch() {
                     />
                   </div>
                   {/* Number of Sides field only for certain advert types */}
-                  {sideAdvertTypes.includes(advertSearchInput) && (
+                  {SIDE_ADVERT_TYPES.includes(advertSearchInput) && (
                     <div className="flex flex-col gap-1">
                       <label className="text-md text-emerald-900 dark:text-white font-semibold mb-1">
                         Number of Sides

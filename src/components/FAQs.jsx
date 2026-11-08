@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-const brandYellow = "#FFD700";
-const brandGreen = "#065A38";
 
 const FAQs = () => {
   const faqs = [

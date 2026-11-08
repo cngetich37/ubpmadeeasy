@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 .vercel
 .qodo
+
+# Firebase deploy cache
+.firebase/
+
+# Local env overrides
+.env.local
+.env.*.local
