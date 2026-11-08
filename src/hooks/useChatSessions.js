@@ -3,9 +3,25 @@ import { useCallback, useEffect, useState } from "react";
 const SESSIONS_KEY = "ubpai_sessions";
 const CURRENT_KEY = "ubpai_currentSession";
 
+// Older versions saved a `pdf` blob: URL on each reply. Those stop working on
+// reload, so drop them; replies now carry `pdfData` and rebuild the PDF on click.
+const dropDeadPdfLinks = (sessions) =>
+  Object.fromEntries(
+    Object.entries(sessions).map(([name, messages]) => [
+      name,
+      (Array.isArray(messages) ? messages : []).map((message) => {
+        if (!message || !("pdf" in message)) return message;
+        const cleaned = { ...message };
+        delete cleaned.pdf;
+        return cleaned;
+      }),
+    ])
+  );
+
 const loadSessions = () => {
   try {
-    return JSON.parse(localStorage.getItem(SESSIONS_KEY)) || { "Chat 1": [] };
+    const saved = JSON.parse(localStorage.getItem(SESSIONS_KEY));
+    return saved && typeof saved === "object" ? dropDeadPdfLinks(saved) : { "Chat 1": [] };
   } catch {
     return { "Chat 1": [] };
   }

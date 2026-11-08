@@ -5,7 +5,7 @@ const ASSISTANT_BUBBLE =
   "bg-emerald-900 text-white dark:bg-[var(--color-primary)] dark:text-[var(--color-bg)]";
 
 /** Scrollable message list, plus the in-progress "typing" reply. */
-const ChatMessages = forwardRef(function ChatMessages({ messages, typing, children }, ref) {
+const ChatMessages = forwardRef(function ChatMessages({ messages, typing, onDownloadPdf, children }, ref) {
   return (
     <div ref={ref} className="flex-1 p-4 overflow-y-auto space-y-4 bg-white dark:bg-[var(--color-surface)]">
       {children}
@@ -23,15 +23,15 @@ const ChatMessages = forwardRef(function ChatMessages({ messages, typing, childr
             }`}
           >
             {message.text}
-            {message.pdf && (
+            {message.pdfData && (
               <div className="mt-2">
-                <a
-                  href={message.pdf}
-                  download="UBP_Advert_Combined.pdf"
+                <button
+                  type="button"
+                  onClick={() => onDownloadPdf(message.pdfData)}
                   className="inline-block bg-[#FFD700] text-emerald-900 px-3 py-1 rounded hover:bg-emerald-900 hover:text-[#FFD700] transition-colors font-semibold text-sm"
                 >
                   Download PDF
-                </a>
+                </button>
               </div>
             )}
           </div>

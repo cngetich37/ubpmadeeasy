@@ -6,10 +6,11 @@ import { MemoryRouter } from "react-router-dom";
 import CombinedSearch from "./CombinedSearch";
 import UBPAgent from "./UBPAgent";
 import UBPTutorial from "./UBPTutorial";
+import { downloadAgentPdf } from "../lib/pdf";
 
 vi.mock("../lib/pdf", async (importOriginal) => ({
   ...(await importOriginal()),
-  createAgentPdfUrl: vi.fn(async () => "blob:agent-pdf"),
+  downloadAgentPdf: vi.fn(async () => {}),
   downloadBusinessPdf: vi.fn(async () => {}),
   downloadAdvertPdf: vi.fn(async () => {}),
 }));
@@ -132,6 +133,50 @@ describe("UBPAgent (/agent)", () => {
     fireEvent.change(screen.getByPlaceholderText("Enter your prompt..."), { target: { value: "hello" } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(await screen.findByText(/didn't understand/, {}, WAIT)).toBeTruthy();
+  });
+
+  it("saves the PDF data with the reply instead of a blob: link", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderAt(<UBPAgent />, "/agent");
+      await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/advert"), expect.anything()));
+      fireEvent.change(screen.getByPlaceholderText("Enter your prompt..."), { target: { value: "Billboard 4m by 1m" } });
+      fireEvent.click(screen.getByRole("button", { name: "Send" }));
+      await screen.findByText(/Advert: Billboard/, {}, WAIT);
+      await vi.advanceTimersByTimeAsync(60_000); // finish the typing animation
+
+      const saved = JSON.parse(localStorage.getItem("ubpai_sessions"))["Chat 1"];
+      const reply = saved[saved.length - 1];
+      expect(reply.role).toBe("assistant");
+      expect(reply).not.toHaveProperty("pdf");
+      expect(reply.pdfData.advert).toMatchObject({ advertType: "Billboard", length: 4, width: 1, renewalFee: 39400 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("can still download a saved reply's PDF after a reload", () => {
+    const pdfData = { business: null, advert: { advertType: "Billboard", rates: BILLBOARD, length: 4, width: 1 } };
+    localStorage.setItem(
+      "ubpai_sessions",
+      JSON.stringify({ "Chat 1": [{ role: "assistant", text: "Advert: Billboard", pdfData }] })
+    );
+    renderAt(<UBPAgent />, "/agent");
+
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }));
+    expect(downloadAgentPdf).toHaveBeenCalledWith(pdfData);
+  });
+
+  it("drops dead blob: links saved by older versions", () => {
+    localStorage.setItem(
+      "ubpai_sessions",
+      JSON.stringify({ "Chat 1": [{ role: "assistant", text: "Old reply", pdf: "blob:https://x/dead" }] })
+    );
+    renderAt(<UBPAgent />, "/agent");
+
+    expect(screen.getByText("Old reply")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Download PDF" })).toBeNull();
+    expect(localStorage.getItem("ubpai_sessions")).not.toContain("blob:");
   });
 });
 

@@ -199,11 +199,20 @@ export async function downloadAdvertPdf(quote) {
 // ---------------------------------------------------------------- agent
 
 /**
- * Build the agent's PDF and return an object URL for it. Advert-only answers
- * use the advert layout; anything with a business uses the business report
- * with an advert summary appended.
+ * Build and download the agent's PDF for an answer ({ business, advert }, as
+ * returned by answerPrompt and stored with the chat message). Advert-only
+ * answers use the advert layout; anything with a business uses the business
+ * report with an advert summary appended.
+ *
+ * The PDF is generated on click rather than stored, because blob: URLs die on
+ * reload and whole PDFs are too big for localStorage.
  */
-export async function createAgentPdfUrl({ business, advert }) {
+export async function downloadAgentPdf(answer) {
+  const pdf = await buildAgentPdf(answer);
+  pdf.save("UBP_Advert_Combined.pdf");
+}
+
+async function buildAgentPdf({ business, advert }) {
   let pdf;
   if (!business && advert) {
     const showDimensions = advert.length !== 1 || advert.width !== 1;
@@ -238,5 +247,5 @@ export async function createAgentPdfUrl({ business, advert }) {
     }
     await addQrCode(pdf, `${SITE_URL}/`);
   }
-  return URL.createObjectURL(pdf.output("blob"));
+  return pdf;
 }

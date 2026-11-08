@@ -196,7 +196,9 @@ On every load, `pruneLegacyStorage()` deletes every localStorage key that is not
 Current keys:
 - `authToken`: terms-acceptance gate
 - `theme`: `"light"` / `"dark"`, set only when the user overrides the system theme
-- `ubpai_sessions`, `ubpai_currentSession`: agent chat history
+- `ubpai_sessions`, `ubpai_currentSession`: agent chat history. Assistant replies store `pdfData`
+  (`{ business, advert }` from `answerPrompt`) and the PDF is rebuilt on click with `downloadAgentPdf()`. Never store
+  `blob:` URLs or PDF bytes there: blob URLs die on reload and PDFs would exhaust the ~5 MB quota.
 - `ubp:v1:businessOptions`, `ubp:v1:lookup:<activity name>`, `ubp:v1:naics:all`: cached API data
 
 ## Styling conventions
@@ -220,5 +222,3 @@ Current keys:
 Discuss these with the user before starting:
 
 1. **The "auth" gate is client-side only.** It's fine for a terms-acceptance check, but it is not access control.
-2. **Agent PDF blob URLs don't survive a reload.** Chat history is persisted, but the `blob:` links in old
-   messages stop working after a refresh.

@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import { readCache, writeCache } from "../lib/cache";
 import { answerPrompt, composeReply } from "../lib/agent";
 import { prepareSpeechText } from "../lib/agentParser";
-import { createAgentPdfUrl } from "../lib/pdf";
+import { downloadAgentPdf } from "../lib/pdf";
 import { listenOnce, speak } from "../lib/speech";
 import { useApiError } from "../hooks/useApiError";
 import { useChatSessions } from "../hooks/useChatSessions";
@@ -17,11 +17,8 @@ import ExamplePrompts from "./agent/ExamplePrompts";
 
 const TYPING_DELAY_MS = 50;
 
-const readAloud = (text) => {
-  if (!speak(prepareSpeechText(text))) {
-    alert("Sorry, text-to-speech is not supported in your browser.");
-  }
-};
+// Returns false if the browser has no text-to-speech.
+const readAloud = (text) => speak(prepareSpeechText(text));
 
 /** /agent: rule-based chat that answers business and advert fee questions. */
 const UBPAgent = () => {
@@ -88,10 +85,12 @@ const UBPAgent = () => {
       const answer = await answerPrompt(inputPrompt, { activities, advertTypes });
       if (answer.business || answer.advert) {
         const text = composeReply(answer);
-        const pdf = await createAgentPdfUrl(answer);
+        // Keep the answer data (small, JSON-safe) so the PDF can be rebuilt on
+        // click, even after a reload.
+        const pdfData = { business: answer.business, advert: answer.advert };
         simulateTyping(text, () => {
-          addMessage(session, { role: "assistant", text, pdf });
-          readAloud(text);
+          addMessage(session, { role: "assistant", text, pdfData });
+          readAloud(text); // automatic: stay silent if unsupported
         });
         return;
       }
@@ -122,7 +121,9 @@ const UBPAgent = () => {
   };
 
   const handleReadLast = () => {
-    if (messages.length) readAloud(messages[messages.length - 1].text);
+    if (messages.length && !readAloud(messages[messages.length - 1].text)) {
+      alert("Sorry, text-to-speech is not supported in your browser.");
+    }
   };
 
   return (
@@ -167,7 +168,12 @@ const UBPAgent = () => {
               <span className="text-[#FFD700]">UBP</span>Agent
             </h1>
           </header>
-          <ChatMessages ref={chatContainerRef} messages={messages} typing={typing}>
+          <ChatMessages
+            ref={chatContainerRef}
+            messages={messages}
+            typing={typing}
+            onDownloadPdf={(pdfData) => downloadAgentPdf(pdfData).catch(onError)}
+          >
             <ErrorBanner message={apiError} onDismiss={clearError} />
           </ChatMessages>
           <ChatInput
